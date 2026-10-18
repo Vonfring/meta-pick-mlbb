@@ -17,7 +17,7 @@ export const LIQUIPEDIA_API_URL =
   "https://liquipedia.net/mobilelegends/api.php";
 
 export const LIQUIPEDIA_USER_AGENT =
-  "MetapickMLBB/1.0 (https://metapick-mlbb.vercel.app; https://github.com/Vonfring/metapick-mlbb; personal non-commercial project)";
+  "MetapickMLBB/1.0 (https://metapick-mlbb.vercel.app; https://github.com/Vonfring/meta-pick-mlbb; personal non-commercial project)";
 
 export class LiquipediaError extends Error {
   constructor(
