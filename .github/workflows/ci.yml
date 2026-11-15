@@ -14,7 +14,9 @@ concurrency:
 jobs:
   app:
     name: Lint, typecheck, test, build, smoke tests
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.56 installs browser dependencies only up to Ubuntu
+    # 24.04, and ubuntu-latest moved to Ubuntu 26 on 2026-10-19.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       DATA_SOURCE: seed
