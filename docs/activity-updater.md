@@ -172,6 +172,7 @@ Proposal:
 | Numbers fail the checks: under 80% of heroes, pick rates far from summing to 1, mean win rate outside 45 to 55% | Skip that snapshot                                                   | The previous data                       |
 | Database error                                                          | The transaction rolls back. Skip that snapshot                                                 | The previous data                       |
 | Revalidation fails, or the site is not deployed yet                     | Warning only                                                                                   | New data at the next 6-hour refresh     |
+| The Vercel Deploy Hook fails or is not set                              | Warning only                                                                                   | JSON bundles under /data/v1 keep the data of the last build |
 | Crash                                                                   | The log row is closed as failed. A row still marked running after 2 hours is closed by the next run | The previous data                  |
 
 Responses are cached for 20 hours in the Actions cache, so a manual rerun on
@@ -199,6 +200,14 @@ constant time and expires the `game-data` cache tag with
 page while a fresh one renders in the background; later visits get the fresh
 one. While `SITE_URL` is not set (before Vercel is set up), this step is
 skipped with a notice.
+
+Right after that the updater sends `POST {VERCEL_DEPLOY_HOOK_URL}`, which
+starts a new production build on Vercel. Revalidation refreshes the pages, but
+the JSON bundles under `/data/v1` are route handlers prerendered at build time
+and Vercel does not regenerate them, so only a build gives them the new data.
+The hook URL is a secret: it is never written to the log row or the summary,
+not even in an error. While it is not set, this step is skipped with a
+notice.
 
 If the last successful stats run is more than 48 hours old, the Statistics
 and Tier list pages say so next to the update date.
@@ -229,7 +238,8 @@ as plain deletes from the updater instead, with the same rules.
 | `SUPABASE_URL`              | GitHub Secrets                         | Both jobs                                             |
 | `SUPABASE_SERVICE_ROLE_KEY` | GitHub Secrets only (the `sb_secret_…` key) | Writing. Never in Vercel, the code or a commit   |
 | `REVALIDATE_SECRET`         | GitHub Secrets and Vercel env          | Revalidation, once the site is on Vercel              |
-| `SITE_URL`                  | GitHub Actions variable                | Revalidation                                          |
+| `SITE_URL`                  | GitHub Actions variable                | Revalidation (`https://meta-pick-mlbb.vercel.app`)    |
+| `VERCEL_DEPLOY_HOOK_URL`    | GitHub Secrets only                    | Starting a Vercel build that rebuilds `/data/v1`      |
 
 Without `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_URL`), a run still fetches and
 checks everything but writes nothing and ends red, so a missing secret never

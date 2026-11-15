@@ -18,6 +18,9 @@ export type ReportEntry = {
 export type Revalidation =
   "done" | "no-changes" | "not-configured" | "failed" | "dry-run";
 
+/** Same outcomes as revalidation, for the Vercel Deploy Hook. */
+export type Redeploy = Revalidation;
+
 export type JobReport = {
   job: JobName;
   dryRun: boolean;
@@ -32,6 +35,7 @@ export type JobReport = {
   retries: number;
   cacheHits: number;
   revalidation: Revalidation | null;
+  redeploy: Redeploy | null;
   pruned: Record<string, number> | null;
 };
 
@@ -52,6 +56,7 @@ export function newReport(
     retries: 0,
     cacheHits: 0,
     revalidation: null,
+    redeploy: null,
     pruned: null,
   };
 }
@@ -123,6 +128,18 @@ export function renderSummary(report: JobReport): string {
       "dry-run": "Dry run: the site was not asked to refresh.",
     };
     lines.push(text[report.revalidation]);
+  }
+  if (report.redeploy) {
+    const text: Record<Redeploy, string> = {
+      done: "A new Vercel build was started, so the data files under /data/v1 follow in a few minutes.",
+      "no-changes": "Nothing to show, so no new Vercel build was started.",
+      "not-configured":
+        "VERCEL_DEPLOY_HOOK_URL is not set, so the data files under /data/v1 keep the data of the last build.",
+      failed:
+        "Starting a new Vercel build failed; the data files under /data/v1 keep the data of the last build.",
+      "dry-run": "Dry run: no new Vercel build was started.",
+    };
+    lines.push(text[report.redeploy]);
   }
   if (report.pruned) {
     const pruned = Object.entries(report.pruned).map(

@@ -20,6 +20,7 @@ import {
   runStatus,
   type JobReport,
 } from "./report";
+import { triggerRedeploy } from "./redeploy";
 import { revalidateSite } from "./revalidate";
 import {
   createDryRunStore,
@@ -588,5 +589,50 @@ describe("revalidateSite", () => {
     expect(
       await revalidateSite("https://example.test", "s", fetchImpl),
     ).toEqual({ result: "failed", detail: "HTTP 401" });
+  });
+});
+
+describe("triggerRedeploy", () => {
+  const hook = "https://api.vercel.com/v1/integrations/deploy/prj_x/s3cret";
+
+  it("does nothing without a hook URL", async () => {
+    const fetchImpl = vi.fn();
+    expect(await triggerRedeploy(undefined, fetchImpl)).toEqual({
+      result: "not-configured",
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("posts to the hook", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 201 }));
+    expect(await triggerRedeploy(hook, fetchImpl)).toEqual({ result: "done" });
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [
+      URL,
+      RequestInit,
+    ];
+    expect(String(url)).toBe(hook);
+    expect(init.method).toBe("POST");
+  });
+
+  it("refuses a hook URL that is not https", async () => {
+    const fetchImpl = vi.fn();
+    expect(
+      await triggerRedeploy("http://api.vercel.com/hook", fetchImpl),
+    ).toEqual({ result: "failed", detail: "the hook URL must use https" });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("never puts the secret hook URL in the failure detail", async () => {
+    const answered = vi.fn(async () => new Response("no", { status: 404 }));
+    expect(await triggerRedeploy(hook, answered)).toEqual({
+      result: "failed",
+      detail: "HTTP 404",
+    });
+    const thrown = vi.fn(async () => {
+      throw new TypeError(`fetch failed: ${hook}`);
+    });
+    const result = await triggerRedeploy(hook, thrown);
+    expect(result.result).toBe("failed");
+    expect(result.detail).not.toContain("s3cret");
   });
 });

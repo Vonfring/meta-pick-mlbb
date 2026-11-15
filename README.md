@@ -21,7 +21,7 @@ Not affiliated with or endorsed by Moonton.
 | `/draft` | Ranked and MPL ban and pick practice with suggestions on every turn |
 | `/about` | Where the data comes from and how the tools decide |
 
-Every page is static and refreshes after each data update. Filters and tools run in the browser on JSON bundles under `/data/v1/`, and their state lives in the URL, so a link shows the same result to anyone.
+Every page is static and refreshes after each data update. Filters and tools run in the browser on JSON bundles under `/data/v1/`, and their state lives in the URL, so a link shows the same result to anyone. The bundles are rebuilt with each Vercel build, which the updater starts after every data update through a Deploy Hook.
 
 ## Local development
 
@@ -112,14 +112,15 @@ The site runs on Vercel Hobby. Image optimization is off (`images.unoptimized`),
    | `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
    | `SUPABASE_PUBLISHABLE_KEY` | The `sb_publishable_…` key (Project Settings → API Keys) |
    | `REVALIDATE_SECRET` | A long random string, for example from `openssl rand -base64 32` |
-   | `NEXT_PUBLIC_SITE_URL` | `https://metapick-mlbb.vercel.app` |
+   | `NEXT_PUBLIC_SITE_URL` | `https://meta-pick-mlbb.vercel.app` |
 
    Never add `SUPABASE_SERVICE_ROLE_KEY` to Vercel. It belongs in GitHub Secrets only.
 4. Deploy. The build reads Supabase once to render every page.
 5. In GitHub, set the `SITE_URL` variable to the same address and the `REVALIDATE_SECRET` secret to the same value as in Vercel (see [Data updates](#data-updates)).
-6. Check it: run "Update stats" from the Actions tab. When the run wrote new statistics, its summary says "The site was asked to refresh its pages." and the "Updated" date on `/tier-list` follows. `POST /api/revalidate` without the secret answers 401.
+6. In Vercel: Project Settings → Git → Deploy Hooks → create a hook for the `main` branch (name it, for example, `updater`). Store the hook URL as the `VERCEL_DEPLOY_HOOK_URL` secret in GitHub. Treat it like a password: anyone with the URL can start builds.
+7. Check it: run "Update stats" from the Actions tab. When the run wrote new statistics, its summary says "The site was asked to refresh its pages." and the "Updated" date on `/tier-list` follows. `POST /api/revalidate` without the secret answers 401.
 
-Without `REVALIDATE_SECRET` the site still works; pages then pick up new data within 6 hours on their own.
+Without `REVALIDATE_SECRET` the site still works; pages then pick up new data within 6 hours on their own. Without `VERCEL_DEPLOY_HOOK_URL` the JSON bundles under `/data/v1/` (the filters, Counter pick, Matchup, Team composition and Draft) keep the data of the last build: route handlers prerendered at build time are not regenerated on Vercel, so revalidation alone does not refresh them.
 
 ## Editing hero tags
 
@@ -154,7 +155,7 @@ Two GitHub Actions workflows keep the database current (details in [`docs/activi
 | `update-stats.yml` | Daily, 03:17 UTC (10:17 WIB) | Ranked statistics for every rank and period; prunes history older than 120 days |
 | `update-catalog.yml` | Mondays, 03:47 UTC (10:47 WIB) | Heroes, skills and relations; items, emblems, talents and battle spells from Liquipedia |
 
-Both also run from the Actions tab ("Run workflow", with a dry run option). Schedules only run from the default branch. Each run logs a row in `data_update_logs` and a summary on its Actions page, and asks the site to refresh when something changed.
+Both also run from the Actions tab ("Run workflow", with a dry run option). Schedules only run from the default branch. Each run logs a row in `data_update_logs` and a summary on its Actions page, and, after every stats run that reached the source and every catalog run that wrote something, asks the site to refresh and starts a new Vercel build.
 
 Settings in the repository (Settings → Secrets and variables → Actions):
 
@@ -163,6 +164,7 @@ Settings in the repository (Settings → Secrets and variables → Actions):
 | `SUPABASE_URL` | Secret | Both jobs |
 | `SUPABASE_SERVICE_ROLE_KEY` | Secret | Writing (the `sb_secret_…` key). Without it a run only checks the sources and ends red, unless it was started as a dry run |
 | `REVALIDATE_SECRET` | Secret | Asking the site to refresh; same value as in Vercel |
-| `SITE_URL` | Variable | The site's address, for example `https://metapick-mlbb.vercel.app` |
+| `SITE_URL` | Variable | The site's address, for example `https://meta-pick-mlbb.vercel.app` |
+| `VERCEL_DEPLOY_HOOK_URL` | Secret | Starting a new Vercel build so the JSON bundles under `/data/v1/` get the new data (Vercel → Project Settings → Git → Deploy Hooks) |
 
 Corrections made in the Table Editor stay until the source changes that row: the catalog job only rewrites rows whose source data changed. For a permanent correction, add it to `seed/overrides/` (items today). To hide a bad statistics snapshot, set its `is_published` to false.

@@ -4,7 +4,7 @@ export const siteConfig = {
   label: "MLBB",
   description:
     "Hero data, a meta tier list, counter picks, matchups, team composition checks and a ranked draft simulator for Mobile Legends: Bang Bang.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://metapick-mlbb.vercel.app",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://meta-pick-mlbb.vercel.app",
   /** Page backgrounds (globals.css) for browser chrome, the manifest and Open Graph images. */
   themeColors: { light: "#eef2f2", dark: "#0e1a21" },
   disclaimer: "Not affiliated with or endorsed by Moonton.",

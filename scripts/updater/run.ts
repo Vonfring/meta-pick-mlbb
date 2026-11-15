@@ -10,7 +10,8 @@
  *
  * Environment: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to write (without
  * them the run is a dry run against the seed files), SITE_URL and
- * REVALIDATE_SECRET to refresh the site afterwards.
+ * REVALIDATE_SECRET to refresh the site afterwards, VERCEL_DEPLOY_HOOK_URL to
+ * rebuild the JSON bundles under /data/v1.
  */
 import { appendFile } from "node:fs/promises";
 import path from "node:path";
@@ -36,6 +37,7 @@ import {
   type JobName,
   type JobReport,
 } from "./report";
+import { triggerRedeploy } from "./redeploy";
 import { revalidateSite } from "./revalidate";
 import { createSeedReader } from "./seed-reader";
 import {
@@ -186,15 +188,25 @@ async function main(): Promise<number> {
   // number changed, so pages show when the data was last checked.
   const refresh =
     job === "stats" ? runStatus(report) !== "failed" : rowsWritten(report) > 0;
-  if (dryRun) report.revalidation = "dry-run";
-  else if (!refresh) report.revalidation = "no-changes";
-  else {
+  if (dryRun) {
+    report.revalidation = "dry-run";
+    report.redeploy = "dry-run";
+  } else if (!refresh) {
+    report.revalidation = "no-changes";
+    report.redeploy = "no-changes";
+  } else {
     const { result, detail } = await revalidateSite(
       env.SITE_URL,
       env.REVALIDATE_SECRET,
     );
     report.revalidation = result;
     if (detail) report.warnings.push(`Revalidation: ${detail}`);
+    // Revalidation refreshes the pages; the JSON bundles under /data/v1 only
+    // change with a new build, so start one too.
+    const redeploy = await triggerRedeploy(env.VERCEL_DEPLOY_HOOK_URL);
+    report.redeploy = redeploy.result;
+    if (redeploy.detail)
+      report.warnings.push(`Vercel Deploy Hook: ${redeploy.detail}`);
   }
 
   try {
@@ -209,6 +221,7 @@ async function main(): Promise<number> {
         warnings: report.warnings,
         pruned: report.pruned,
         revalidation: report.revalidation,
+        redeploy: report.redeploy,
       },
     });
   } catch (error) {

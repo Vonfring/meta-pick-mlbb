@@ -157,7 +157,7 @@ async function main() {
   const browser = await chromium.launch({ executablePath: process.env.PW_EXECUTABLE_PATH || undefined });
   // Identify ourselves the same way the importer does, on top of the browser's own user agent.
   const probe = await browser.newPage();
-  const userAgent = `${await probe.evaluate(() => navigator.userAgent)} MetapickMLBB-Inspector/1.0 (+https://metapick-mlbb.vercel.app; personal non-commercial project)`;
+  const userAgent = `${await probe.evaluate(() => navigator.userAgent)} MetapickMLBB-Inspector/1.0 (+https://meta-pick-mlbb.vercel.app; personal non-commercial project)`;
   await probe.close();
   const context = await browser.newContext({ userAgent, locale: "en-US", viewport: { width: 1366, height: 900 } });
   await context.route("**/*", (route) =>

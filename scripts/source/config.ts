@@ -70,7 +70,7 @@ export const MATCH_TYPE = { counters: "0", teammates: "1" } as const;
 
 /** One honest, fixed User-Agent. No rotation, no spoofed forwarding headers. */
 export const USER_AGENT =
-  "MetapickMLBB-Updater/1.0 (+https://metapick-mlbb.vercel.app; personal non-commercial project)";
+  "MetapickMLBB-Updater/1.0 (+https://meta-pick-mlbb.vercel.app; personal non-commercial project)";
 
 export const PACING = {
   /** Minimum gap between two requests. */
