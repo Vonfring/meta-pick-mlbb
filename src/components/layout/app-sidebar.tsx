@@ -1,9 +1,13 @@
 import { Wordmark } from "@/components/brand/wordmark";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { common } from "@/i18n/messages/common";
+import { getLocale } from "@/i18n/server";
 import { cn } from "@/lib/utils";
+import { LanguageSwitch } from "./language-switch";
 import { SidebarNav } from "./sidebar-nav";
 
-export function AppSidebar({ className }: { className?: string }) {
+export async function AppSidebar({ className }: { className?: string }) {
+  const t = common[await getLocale()].shell;
   return (
     <aside
       className={cn(
@@ -13,9 +17,19 @@ export function AppSidebar({ className }: { className?: string }) {
     >
       <Wordmark className="px-2" />
       <SidebarNav />
-      <div className="mt-auto flex flex-col gap-2">
-        <p className="px-1 text-xs font-medium text-muted-foreground">Theme</p>
-        <ThemeToggle />
+      <div className="mt-auto flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-xs font-medium text-muted-foreground">
+            {t.language}
+          </p>
+          <LanguageSwitch />
+        </div>
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-xs font-medium text-muted-foreground">
+            {t.theme}
+          </p>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowClockwiseIcon, MagnifyingGlassIcon } from "@/components/icons";
 import { HeroAvatar } from "@/components/meta/hero-avatar";

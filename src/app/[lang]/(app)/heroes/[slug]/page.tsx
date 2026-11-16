@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CaretLeftIcon, InfoIcon } from "@/components/icons";
@@ -54,7 +54,7 @@ function describeSnapshot(snapshot: SnapshotInfo | null) {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/heroes/[slug]">): Promise<Metadata> {
+}: PageProps<"/[lang]/heroes/[slug]">): Promise<Metadata> {
   const hero = await findHero((await params).slug);
   if (!hero) return { title: "Hero not found" };
   return {
@@ -139,7 +139,7 @@ function HeroPageSkeleton() {
 
 // The hero page reads its slug inside <Suspense>, so navigating to a hero
 // shows the skeleton at once. Every hero known at build time is prerendered.
-export default function HeroPage(props: PageProps<"/heroes/[slug]">) {
+export default function HeroPage(props: PageProps<"/[lang]/heroes/[slug]">) {
   return (
     <Suspense fallback={<HeroPageSkeleton />}>
       <HeroDetail params={props.params} />
@@ -149,7 +149,7 @@ export default function HeroPage(props: PageProps<"/heroes/[slug]">) {
 
 async function HeroDetail({
   params,
-}: Pick<PageProps<"/heroes/[slug]">, "params">) {
+}: Pick<PageProps<"/[lang]/heroes/[slug]">, "params">) {
   const { slug } = await params;
   // Inside <Suspense> the response has already started, so an unknown slug
   // gets the not-found page with a noindex tag rather than a 404 status.

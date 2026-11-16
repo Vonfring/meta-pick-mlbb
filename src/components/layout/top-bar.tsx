@@ -1,6 +1,7 @@
 import { Wordmark } from "@/components/brand/wordmark";
 import { ThemeCycleButton } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
+import { LanguageToggleButton } from "./language-switch";
 
 /** Mobile and tablet header. Desktop uses the sidebar instead. */
 export function TopBar({ className }: { className?: string }) {
@@ -12,7 +13,10 @@ export function TopBar({ className }: { className?: string }) {
       )}
     >
       <Wordmark />
-      <ThemeCycleButton />
+      <div className="flex items-center gap-1">
+        <LanguageToggleButton />
+        <ThemeCycleButton />
+      </div>
     </header>
   );
 }

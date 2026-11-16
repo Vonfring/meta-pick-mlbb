@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { useMemo, useRef, useState } from "react";
 import { CaretDownIcon, CrosshairIcon } from "@/components/icons";
 import { SnapshotNote } from "@/components/meta-stats/snapshot-note";

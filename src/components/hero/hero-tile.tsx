@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
 import { TierBadge } from "@/components/meta/tier-badge";
 import { formatPercent } from "@/lib/format";

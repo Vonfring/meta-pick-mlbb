@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/locale-link";
 import { useState } from "react";
 import { DotsThreeOutlineIcon, InfoIcon } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -18,13 +17,17 @@ import {
   mobilePrimaryHrefs,
   navGroups,
 } from "@/config/navigation";
+import { useAppPath, useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
 import { cn } from "@/lib/utils";
+import { LanguageSwitch } from "./language-switch";
 
 const primary = new Set<string>(mobilePrimaryHrefs);
 
 export function MoreDrawer({ active }: { active: boolean }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = useAppPath();
+  const t = common[useLocale()];
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -39,25 +42,23 @@ export function MoreDrawer({ active }: { active: boolean }) {
           weight={active ? "fill" : "regular"}
           aria-hidden
         />
-        More
+        {t.shell.more}
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>More</DrawerTitle>
-          <DrawerDescription>
-            Every page, plus theme settings.
-          </DrawerDescription>
+          <DrawerTitle>{t.shell.more}</DrawerTitle>
+          <DrawerDescription>{t.shell.moreDescription}</DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-5 overflow-y-auto px-4 pb-2">
           {navGroups.map((group) => {
             const items = group.items.filter((item) => !primary.has(item.href));
             if (items.length === 0) return null;
             return (
-              <div key={group.label} className="flex flex-col gap-1">
+              <div key={group.id} className="flex flex-col gap-1">
                 <p className="pb-1 text-xs font-medium text-muted-foreground">
-                  {group.label}
+                  {t.nav.groups[group.id]}
                 </p>
-                {items.map(({ href, label, description, icon: Icon }) => {
+                {items.map(({ href, icon: Icon }) => {
                   const current = isActivePath(pathname, href);
                   return (
                     <Link
@@ -79,9 +80,11 @@ export function MoreDrawer({ active }: { active: boolean }) {
                         aria-hidden
                       />
                       <span className="flex flex-col">
-                        <span className="text-sm font-medium">{label}</span>
+                        <span className="text-sm font-medium">
+                          {t.nav.items[href].label}
+                        </span>
                         <span className="text-xs text-muted-foreground">
-                          {description}
+                          {t.nav.items[href].description}
                         </span>
                       </span>
                     </Link>
@@ -99,10 +102,18 @@ export function MoreDrawer({ active }: { active: boolean }) {
               className="size-5 shrink-0 text-muted-foreground"
               aria-hidden
             />
-            <span className="text-sm font-medium">About the data</span>
+            <span className="text-sm font-medium">{t.shell.aboutData}</span>
           </Link>
           <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs font-medium text-muted-foreground">Theme</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              {t.shell.language}
+            </p>
+            <LanguageSwitch />
+          </div>
+          <div className="flex flex-col gap-2 pt-1">
+            <p className="text-xs font-medium text-muted-foreground">
+              {t.shell.theme}
+            </p>
             <ThemeToggle />
           </div>
         </div>

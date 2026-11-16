@@ -73,8 +73,8 @@ export const bracketLabels: Record<RankBracket, string> = {
   epic: "Epic",
   legend: "Legend",
   mythic: "Mythic",
-  honor: "Mythic Honor",
-  glory: "Mythic Glory",
+  honor: "Mythical Honor",
+  glory: "Mythical Glory",
 };
 
 export const periodLabels: Record<PeriodDays, string> = {

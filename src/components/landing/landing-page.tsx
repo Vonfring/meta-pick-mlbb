@@ -16,7 +16,7 @@ export type LandingPageProps = {
   snapshotNote: string | null;
   /** "last 7 days" */
   periodText: string;
-  /** "Epic to Mythic Glory" */
+  /** "Epic to Mythical Glory" */
   rankRange: string;
   heroCount: number;
   rankCount: number;

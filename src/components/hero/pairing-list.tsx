@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
 import { RateDelta } from "@/components/meta/rate-delta";
 import type { HeroRow } from "@/types/data";

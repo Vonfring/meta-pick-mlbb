@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/locale-link";
 import {
   allNavItems,
   isActivePath,
   mobilePrimaryHrefs,
 } from "@/config/navigation";
+import { useAppPath, useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
 import { cn } from "@/lib/utils";
 import { MoreDrawer } from "./more-drawer";
 
@@ -16,21 +17,23 @@ const primaryItems = mobilePrimaryHrefs.map((href) =>
 
 /** Fixed bottom bar for phones and tablets. */
 export function BottomNav({ className }: { className?: string }) {
-  const pathname = usePathname();
+  const pathname = useAppPath();
+  const t = common[useLocale()];
   const moreActive =
     !primaryItems.some((item) => isActivePath(pathname, item.href)) &&
     allNavItems.some((item) => isActivePath(pathname, item.href));
 
   return (
     <nav
-      aria-label="Main"
+      aria-label={t.shell.mainNav}
       className={cn(
         "fixed inset-x-0 bottom-0 z-30 border-t bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-surface/85",
         className,
       )}
     >
       <ul className="mx-auto grid h-16 max-w-xl grid-cols-5">
-        {primaryItems.map(({ href, label, shortLabel, icon: Icon }) => {
+        {primaryItems.map(({ href, icon: Icon }) => {
+          const text = t.nav.items[href];
           const active = isActivePath(pathname, href);
           return (
             <li key={href}>
@@ -47,7 +50,7 @@ export function BottomNav({ className }: { className?: string }) {
                   weight={active ? "fill" : "regular"}
                   aria-hidden
                 />
-                {shortLabel ?? label}
+                {text.shortLabel ?? text.label}
               </Link>
             </li>
           );

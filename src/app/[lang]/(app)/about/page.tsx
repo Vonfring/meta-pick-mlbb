@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { CatalogCredit } from "@/components/meta/catalog-credit";
 import { PageHeader } from "@/components/meta/page-header";
 import { siteConfig } from "@/config/site";

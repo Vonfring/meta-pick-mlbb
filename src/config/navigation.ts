@@ -10,9 +10,11 @@ import {
   UsersThreeIcon,
   type IconComponent,
 } from "@/components/icons";
+import { common, type NavGroupId, type NavHref } from "@/i18n/messages/common";
 
 export type NavItem = {
-  href: string;
+  href: NavHref;
+  /** English texts; the app shows common[locale].nav.items[href] instead. */
   label: string;
   /** Shorter label for the mobile bottom bar. */
   shortLabel?: string;
@@ -21,85 +23,43 @@ export type NavItem = {
 };
 
 export type NavGroup = {
+  id: NavGroupId;
   label: string;
   items: NavItem[];
 };
 
-export const navGroups: NavGroup[] = [
-  {
-    label: "Meta",
-    items: [
-      {
-        href: "/tier-list",
-        label: "Tier list",
-        shortLabel: "Tiers",
-        icon: RankingIcon,
-        description: "Every hero ranked SS to D from win, pick and ban rates.",
-      },
-      {
-        href: "/statistics",
-        label: "Statistics",
-        icon: ChartBarIcon,
-        description: "Win, pick and ban rates by rank and period.",
-      },
-    ],
-  },
-  {
-    label: "Database",
-    items: [
-      {
-        href: "/heroes",
-        label: "Heroes",
-        icon: UsersThreeIcon,
-        description: "Skills, statistics, counters and best teammates.",
-      },
-      {
-        href: "/items",
-        label: "Items",
-        icon: SwordIcon,
-        description: "Every item with stats, passives and price.",
-      },
-      {
-        href: "/emblems",
-        label: "Emblems",
-        icon: HexagonIcon,
-        description: "Emblem sets, talents and picks per role.",
-      },
-    ],
-  },
-  {
-    label: "Tools",
-    items: [
-      {
-        href: "/counter-pick",
-        label: "Counter pick",
-        shortLabel: "Counter",
-        icon: CrosshairIcon,
-        description: "Pick up to five enemies and get heroes that beat them.",
-      },
-      {
-        href: "/matchup",
-        label: "Matchup",
-        icon: ScalesIcon,
-        description: "Hero against hero, or team against team.",
-      },
-      {
-        href: "/team-composition",
-        label: "Team composition",
-        shortLabel: "Team comp",
-        icon: UsersFourIcon,
-        description: "Check a lineup for missing roles and weak spots.",
-      },
-      {
-        href: "/draft",
-        label: "Draft master",
-        shortLabel: "Draft",
-        icon: StrategyIcon,
-        description: "Practice ranked ban and pick with live suggestions.",
-      },
-    ],
-  },
-];
+const groupItems: Record<NavGroupId, [NavHref, IconComponent][]> = {
+  meta: [
+    ["/tier-list", RankingIcon],
+    ["/statistics", ChartBarIcon],
+  ],
+  database: [
+    ["/heroes", UsersThreeIcon],
+    ["/items", SwordIcon],
+    ["/emblems", HexagonIcon],
+  ],
+  tools: [
+    ["/counter-pick", CrosshairIcon],
+    ["/matchup", ScalesIcon],
+    ["/team-composition", UsersFourIcon],
+    ["/draft", StrategyIcon],
+  ],
+};
+
+const en = common.en.nav;
+
+/** The navigation, with English texts for the welcome page and the sitemap. */
+export const navGroups: NavGroup[] = (
+  Object.keys(groupItems) as NavGroupId[]
+).map((id) => ({
+  id,
+  label: en.groups[id],
+  items: groupItems[id].map(([href, icon]) => ({
+    href,
+    icon,
+    ...en.items[href],
+  })),
+}));
 
 export const allNavItems: NavItem[] = navGroups.flatMap((group) => group.items);
 

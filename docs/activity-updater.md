@@ -55,8 +55,8 @@ flowchart TD
     R --> T[Finish the log row and the job summary]
 ```
 
-**What a snapshot is.** One rank (All, Epic, Legend, Mythic, Mythic Honor,
-Mythic Glory) times one period (1, 3, 7, 15 or 30 days) is 30 snapshots per
+**What a snapshot is.** One rank (All, Epic, Legend, Mythic, Mythical Honor,
+Mythical Glory) times one period (1, 3, 7, 15 or 30 days) is 30 snapshots per
 run. Each holds every hero's win, pick and ban rate. The 7-day snapshots also
 hold matchup and teammate pairs; if the teammate pairs cannot be fetched, the
 whole 7-day snapshot waits for the next run, so pruning never drops the

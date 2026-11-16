@@ -1,10 +1,17 @@
 import { ImageResponse } from "next/og";
+import { LOCALES } from "@/i18n/config";
 import { OG_SIZE, OgFrame, ogColors, ogFonts } from "@/lib/og";
 
 export const alt =
   "Metapick MLBB: tier list, counter picks, matchups and a draft simulator for Mobile Legends";
 export const size = OG_SIZE;
 export const contentType = "image/png";
+
+// Built with the site in both languages. Image routes do not inherit the
+// [lang] params of the root layout.
+export function generateStaticParams() {
+  return LOCALES.map((lang) => ({ lang }));
+}
 
 export default async function Image() {
   return new ImageResponse(

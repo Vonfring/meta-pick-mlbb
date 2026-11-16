@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { useRef } from "react";
 import { ArrowsLeftRightIcon, ScalesIcon } from "@/components/icons";
 import { EmptyState } from "@/components/meta/empty-state";

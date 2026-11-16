@@ -1,22 +1,24 @@
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { CatalogCredit } from "@/components/meta/catalog-credit";
-import { siteConfig } from "@/config/site";
+import { common } from "@/i18n/messages/common";
+import { getLocale } from "@/i18n/server";
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const t = common[await getLocale()];
   return (
     <footer className="border-t px-4 pt-6 pb-28 text-xs text-muted-foreground sm:px-6 lg:px-10 lg:pb-8">
       <div className="mx-auto flex max-w-[1200px] flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex max-w-[65ch] flex-col gap-1">
-          <p className="font-medium text-foreground">{siteConfig.disclaimer}</p>
-          <p>{siteConfig.attribution}</p>
+          <p className="font-medium text-foreground">{t.site.disclaimer}</p>
+          <p>{t.site.attribution}</p>
           <CatalogCredit />
         </div>
-        <nav aria-label="Footer" className="flex gap-4">
+        <nav aria-label={t.shell.footerNav} className="flex gap-4">
           <Link href="/" className="hover:text-foreground">
-            What Metapick does
+            {t.shell.whatMetapickDoes}
           </Link>
           <Link href="/about" className="hover:text-foreground">
-            About the data
+            {t.shell.aboutData}
           </Link>
         </nav>
       </div>

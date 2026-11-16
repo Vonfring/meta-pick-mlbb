@@ -1,9 +1,12 @@
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { siteConfig } from "@/config/site";
+import { common } from "@/i18n/messages/common";
+import { getLocale } from "@/i18n/server";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo-mark";
 
-export function Wordmark({ className }: { className?: string }) {
+export async function Wordmark({ className }: { className?: string }) {
+  const t = common[await getLocale()].shell;
   // Inside the app the logo leads to the app's start, not the welcome page.
   return (
     <Link
@@ -17,7 +20,7 @@ export function Wordmark({ className }: { className?: string }) {
       <span className="rounded-[5px] border px-1.5 py-[3px] text-[0.625rem] leading-none font-bold text-muted-foreground">
         {siteConfig.label}
       </span>
-      <span className="sr-only"> home</span>
+      <span className="sr-only">{t.homeSuffix}</span>
     </Link>
   );
 }

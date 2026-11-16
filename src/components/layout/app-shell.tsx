@@ -1,19 +1,22 @@
 import type * as React from "react";
 import { Suspense } from "react";
+import { common } from "@/i18n/messages/common";
+import { getLocale } from "@/i18n/server";
 import { UrlParamsSync } from "@/lib/use-url-params";
 import { AppSidebar } from "./app-sidebar";
 import { BottomNav } from "./bottom-nav";
 import { SiteFooter } from "./site-footer";
 import { TopBar } from "./top-bar";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  const t = common[await getLocale()].shell;
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <a
         href="#main"
         className="sr-only z-50 rounded-md bg-surface px-3 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
-        Skip to content
+        {t.skipToContent}
       </a>
       <AppSidebar className="hidden lg:flex" />
       <div className="flex min-h-dvh min-w-0 flex-col">

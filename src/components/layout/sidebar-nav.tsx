@@ -1,21 +1,23 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/locale-link";
 import { isActivePath, navGroups } from "@/config/navigation";
+import { useAppPath, useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
 import { cn } from "@/lib/utils";
 
 export function SidebarNav() {
-  const pathname = usePathname();
+  const pathname = useAppPath();
+  const t = common[useLocale()];
 
   return (
-    <nav aria-label="Main" className="flex flex-col gap-6">
+    <nav aria-label={t.shell.mainNav} className="flex flex-col gap-6">
       {navGroups.map((group) => (
-        <div key={group.label} className="flex flex-col gap-1">
+        <div key={group.id} className="flex flex-col gap-1">
           <p className="px-3 pb-1 text-xs font-medium text-muted-foreground">
-            {group.label}
+            {t.nav.groups[group.id]}
           </p>
-          {group.items.map(({ href, label, icon: Icon }) => {
+          {group.items.map(({ href, icon: Icon }) => {
             const active = isActivePath(pathname, href);
             return (
               <Link
@@ -37,7 +39,7 @@ export function SidebarNav() {
                   weight={active ? "fill" : "regular"}
                   aria-hidden
                 />
-                {label}
+                {t.nav.items[href].label}
               </Link>
             );
           })}

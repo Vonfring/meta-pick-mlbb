@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
 import type { MetaRow } from "@/lib/meta/meta-rows";
 import { formatPercent } from "@/lib/format";

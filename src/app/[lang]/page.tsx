@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { notFound } from "next/navigation";
 import { LandingPage } from "@/components/landing/landing-page";
 import { DEFAULT_BRACKET, DEFAULT_PERIOD } from "@/config/filters";
 import { navGroups } from "@/config/navigation";
@@ -12,10 +13,13 @@ import {
   RANK_BRACKETS,
 } from "@/types/domain";
 
-// The title is the site's default from the root layout.
+// The title is the site's default from the root layout. The welcome page
+// is English only (docs/i18n.md); /id redirects to /id/app (next.config.ts).
 export const metadata: Metadata = {
   description:
     "Counter picks, matchups, team checks and a ranked draft simulator for Mobile Legends. Every suggestion shows the numbers behind it.",
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: "Metapick MLBB", url: "/" },
 };
 
 // The page has one dark look whatever the app theme.
@@ -30,7 +34,8 @@ const PER_TIER_CLOUD = 5;
  * has not used it yet. It lives outside the (app) group, so it has its own
  * header and footer instead of the app shell; "Open the app" leads to /app.
  */
-export default async function WelcomePage() {
+export default async function WelcomePage({ params }: PageProps<"/[lang]">) {
+  if ((await params).lang !== "en") notFound();
   const { heroes, snapshot } = await getRankedHeroes(
     DEFAULT_BRACKET,
     DEFAULT_PERIOD,

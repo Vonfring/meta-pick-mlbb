@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { DEFAULT_BRACKET, DEFAULT_PERIOD } from "@/config/filters";
+import { LOCALES } from "@/i18n/config";
 import { getHeroSlugParams, getRankedHeroes } from "@/lib/data";
 import { formatPercent, initials } from "@/lib/format";
 import { roleLine } from "@/lib/heroes/roles";
@@ -17,8 +18,12 @@ export const alt = "Hero card with role, lane, tier and win rate";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
-// One image per hero, built with the site like the hero pages.
-export const generateStaticParams = getHeroSlugParams;
+// One image per hero and language, built with the site like the hero pages.
+// Image routes do not inherit the [lang] params of the root layout.
+export async function generateStaticParams() {
+  const slugs = await getHeroSlugParams();
+  return LOCALES.flatMap((lang) => slugs.map(({ slug }) => ({ lang, slug })));
+}
 
 export default async function Image({
   params,

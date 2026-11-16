@@ -6,34 +6,36 @@ import {
   SunIcon,
   type IconComponent,
 } from "@/components/icons";
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
 import { cn } from "@/lib/utils";
 import type { ThemePreference } from "./theme-constants";
 import { useThemePreference } from "./use-theme";
 
 const options: {
   value: ThemePreference;
-  label: string;
   icon: IconComponent;
 }[] = [
-  { value: "system", label: "System", icon: DesktopIcon },
-  { value: "light", label: "Light", icon: SunIcon },
-  { value: "dark", label: "Dark", icon: MoonIcon },
+  { value: "system", icon: DesktopIcon },
+  { value: "light", icon: SunIcon },
+  { value: "dark", icon: MoonIcon },
 ];
 
 /** Three-way theme switch: follow the system, or force light or dark. */
 export function ThemeToggle({ className }: { className?: string }) {
   const [preference, setPreference] = useThemePreference();
+  const t = common[useLocale()].shell;
 
   return (
     <div
       role="radiogroup"
-      aria-label="Color theme"
+      aria-label={t.themeGroup}
       className={cn(
         "grid grid-cols-3 gap-1 rounded-md border bg-surface-2 p-1",
         className,
       )}
     >
-      {options.map(({ value, label, icon: Icon }) => {
+      {options.map(({ value, icon: Icon }) => {
         const checked = preference === value;
         return (
           <button
@@ -54,7 +56,7 @@ export function ThemeToggle({ className }: { className?: string }) {
               weight={checked ? "fill" : "regular"}
               aria-hidden
             />
-            {label}
+            {t.themeOptions[value]}
           </button>
         );
       })}
@@ -69,12 +71,16 @@ export function ThemeCycleButton({ className }: { className?: string }) {
   const current = options[index] ?? options[0]!;
   const next = options[(index + 1) % options.length]!;
   const Icon = current.icon;
+  const t = common[useLocale()].shell;
 
   return (
     <button
       type="button"
       onClick={() => setPreference(next.value)}
-      aria-label={`Theme: ${current.label}. Switch to ${next.label.toLowerCase()}`}
+      aria-label={t.themeCycle(
+        t.themeOptions[current.value],
+        t.themeOptions[next.value],
+      )}
       className={cn(
         "inline-flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground",
         className,

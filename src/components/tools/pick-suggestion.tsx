@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import type * as React from "react";
 import { CaretDownIcon, CheckCircleIcon } from "@/components/icons";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
