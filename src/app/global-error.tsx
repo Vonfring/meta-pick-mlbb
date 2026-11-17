@@ -1,13 +1,31 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+import { DEFAULT_LOCALE, stripLocale, type Locale } from "@/i18n/config";
+import { homeText } from "@/i18n/messages/home";
+
+// Rendered in place of the root layout, so there is no LocaleProvider: the
+// language comes from the URL. The server snapshot is English, so hydration
+// matches and an Indonesian page switches right after.
+const subscribe = () => () => {};
+const getLocaleSnapshot = (): Locale =>
+  stripLocale(window.location.pathname).locale;
+const getServerLocale = (): Locale => DEFAULT_LOCALE;
+
 export default function GlobalError({
   retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  const locale = useSyncExternalStore(
+    subscribe,
+    getLocaleSnapshot,
+    getServerLocale,
+  );
+  const t = homeText[locale].globalError;
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body
         style={{
           fontFamily: "system-ui, sans-serif",
@@ -16,9 +34,9 @@ export default function GlobalError({
           color: "#10212a",
         }}
       >
-        <title>Something went wrong | Metapick MLBB</title>
-        <h1 style={{ fontSize: "1.5rem" }}>Metapick failed to load</h1>
-        <p>Reload the page. If it keeps failing, try again in a few minutes.</p>
+        <title>{t.documentTitle}</title>
+        <h1 style={{ fontSize: "1.5rem" }}>{t.title}</h1>
+        <p>{t.body}</p>
         <button
           type="button"
           onClick={() => retry()}
@@ -28,7 +46,7 @@ export default function GlobalError({
             borderRadius: 10,
           }}
         >
-          Try again
+          {t.tryAgain}
         </button>
       </body>
     </html>

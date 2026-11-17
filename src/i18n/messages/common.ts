@@ -244,7 +244,7 @@ export const common = defineMessages<{
     site: {
       titleDefault: "Metapick MLBB: tier list meta, counter, dan tools draft",
       description:
-        "Data hero, tier list meta, counter pick, matchup, cek komposisi tim, sama simulator draft ranked buat Mobile Legends: Bang Bang.",
+        "Data hero, tier list meta, counter pick, matchup, cek komposisi tim, dan simulator draft ranked buat Mobile Legends: Bang Bang.",
       disclaimer:
         "Situs ini nggak berafiliasi sama Moonton dan bukan situs resmi.",
       attribution:
@@ -259,7 +259,7 @@ export const common = defineMessages<{
       skipToContent: "Langsung ke konten",
       mainNav: "Utama",
       footerNav: "Footer",
-      homeSuffix: " beranda",
+      homeSuffix: " (beranda)",
       more: "Lainnya",
       moreDescription: "Semua halaman, plus pengaturan bahasa dan tema.",
       aboutData: "Tentang data",
@@ -278,7 +278,7 @@ export const common = defineMessages<{
           label: "Tier list",
           shortLabel: "Tier",
           description:
-            "Semua hero dirangking dari SS sampai D pake win rate, pick rate, dan ban rate.",
+            "Semua hero dikasih tier SS sampai D, dihitung dari win rate, pick rate, dan ban rate.",
         },
         "/statistics": {
           label: "Statistik",
@@ -287,8 +287,7 @@ export const common = defineMessages<{
         },
         "/heroes": {
           label: "Hero",
-          description:
-            "Skill, statistik, counter, sama teman setim yang paling cocok.",
+          description: "Skill, statistik, counter, dan teman setim terbaik.",
         },
         "/items": {
           label: "Item",
@@ -296,7 +295,7 @@ export const common = defineMessages<{
         },
         "/emblems": {
           label: "Emblem",
-          description: "Set emblem, talent, dan pilihan buat tiap role.",
+          description: "Set emblem, talent, dan rekomendasi buat tiap role.",
         },
         "/counter-pick": {
           label: "Counter pick",
@@ -312,7 +311,7 @@ export const common = defineMessages<{
           label: "Komposisi tim",
           shortLabel: "Komposisi",
           description:
-            "Cek lineup timmu, ada role yang bolong atau titik lemah nggak.",
+            "Cek lineup tim kamu: ada role yang bolong atau titik lemah nggak.",
         },
         "/draft": {
           label: "Draft master",

@@ -2,9 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 import { InfoIcon } from "@/components/icons";
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
+import { metaText } from "@/i18n/messages/meta";
 import type { MetaSnapshot, SnapshotInfo } from "@/lib/data";
 import { formatDate } from "@/lib/format";
-import { bracketLabels, periodLabels } from "@/types/domain";
 
 /** Statistics older than this get a note that the update may be late. */
 const STALE_AFTER_HOURS = 48;
@@ -35,22 +37,22 @@ export function SnapshotNote({
     () => openedAt,
     () => null,
   );
+  const locale = useLocale();
+  const c = common[locale];
+  const t = metaText[locale].snapshot;
   const { snapshot, previous } = data;
   if (!snapshot) {
     return (
       <p className="text-sm text-muted-foreground">
-        No statistics for {bracketLabels[data.bracket]},{" "}
-        {periodLabels[data.period].toLowerCase()} yet.
+        {t.noStats(c.brackets[data.bracket], c.periods[data.period])}
       </p>
     );
   }
   // The updater only writes numbers that changed, so the last check can be
   // newer than the snapshot itself.
   const checked = data.checkedAt ?? snapshot.fetched_at;
-  const unchangedSince =
-    formatDate(snapshot.fetched_at) !== formatDate(checked)
-      ? ` (numbers unchanged since ${formatDate(snapshot.fetched_at)})`
-      : "";
+  const fetchedDate = formatDate(snapshot.fetched_at, locale);
+  const checkedDate = formatDate(checked, locale);
   const ageHours = now === null ? 0 : (now - Date.parse(checked)) / 3_600_000;
   return (
     <div
@@ -58,27 +60,24 @@ export function SnapshotNote({
       aria-live="polite"
     >
       <p>
-        {bracketLabels[snapshot.rank_bracket]},{" "}
-        {periodLabels[snapshot.period_days].toLowerCase()}. Updated{" "}
-        {formatDate(checked)}
-        {unchangedSince}.{" "}
+        {t.updated(
+          c.brackets[snapshot.rank_bracket],
+          c.periods[snapshot.period_days],
+          checkedDate,
+          fetchedDate !== checkedDate ? fetchedDate : null,
+        )}{" "}
         {previous === undefined
           ? ""
           : previous
-            ? `Changes compare with ${formatDate(previous.snapshot_date)}.`
-            : `Changes appear once there are numbers from ${snapshot.period_days === 1 ? "the day" : `${snapshot.period_days} days`} before.`}
-        {loading ? " Loading…" : ""}
+            ? t.comparedWith(formatDate(previous.snapshot_date, locale))
+            : t.changesLater(snapshot.period_days)}
+        {loading ? ` ${t.loading}` : ""}
       </p>
-      {error ? (
-        <p className="text-negative">
-          The numbers you picked could not be loaded, so these stay on screen.
-        </p>
-      ) : null}
+      {error ? <p className="text-negative">{t.loadError}</p> : null}
       {ageHours > STALE_AFTER_HOURS ? (
         <p className="flex items-center gap-1.5">
           <InfoIcon className="size-4 shrink-0" aria-hidden />
-          No update for {Math.floor(ageHours / 24)} days. The next one may be
-          late.
+          {t.stale(Math.floor(ageHours / 24))}
         </p>
       ) : null}
     </div>

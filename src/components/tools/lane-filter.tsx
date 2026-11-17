@@ -1,11 +1,8 @@
 "use client";
 
 import { ChipGroup } from "@/components/ui/chip-group";
-
-const OPTIONS = [
-  { value: "open", label: "Open lanes only" },
-  { value: "any", label: "Any lane" },
-] as const;
+import { useLocale } from "@/i18n/client";
+import { toolsText } from "@/i18n/messages/tools";
 
 /** Whether suggestions must fit a lane the team still has open. Kept in the URL as ?lanes=any. */
 export function LaneFilter({
@@ -15,10 +12,14 @@ export function LaneFilter({
   openLanesOnly: boolean;
   onChange: (openLanesOnly: boolean) => void;
 }) {
+  const t = toolsText[useLocale()].laneFilter;
   return (
     <ChipGroup
-      label="Lanes of the suggested heroes"
-      options={OPTIONS}
+      label={t.label}
+      options={[
+        { value: "open", label: t.open },
+        { value: "any", label: t.any },
+      ]}
       value={openLanesOnly ? "open" : "any"}
       onChange={(value) => onChange(value === "open")}
     />

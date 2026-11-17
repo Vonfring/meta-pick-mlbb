@@ -15,6 +15,10 @@ import { useToolData } from "@/components/tools/use-tool-data";
 import { Button } from "@/components/ui/button";
 import { ChipGroup, type ChipOption } from "@/components/ui/chip-group";
 import { DEFAULT_BRACKET } from "@/config/filters";
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
+import { counterText } from "@/i18n/messages/counter";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroKnowledge, HeroSummary, MatchupSnapshot } from "@/lib/data";
 import { formatPercent, formatPoints } from "@/lib/format";
 import { heroListParam, parseHeroList } from "@/lib/hero-list-param";
@@ -25,27 +29,15 @@ import type { HeroIndex } from "@/lib/scoring/hero-index";
 import { oneOf, rankParam, useUrlParams } from "@/lib/use-url-params";
 import { cn } from "@/lib/utils";
 import {
-  bracketLabels,
   HERO_LANES,
   HERO_ROLES,
   type HeroLane,
   type HeroRole,
-  laneLabels,
   type RankBracket,
-  roleLabels,
 } from "@/types/domain";
 
 const PAGE_SIZE = 10;
 const WEAKEST_SHOWN = 3;
-
-const roleOptions: ChipOption<HeroRole | "all">[] = [
-  { value: "all", label: "All roles" },
-  ...HERO_ROLES.map((r) => ({ value: r, label: roleLabels[r] })),
-];
-const laneOptions: ChipOption<HeroLane | "all">[] = [
-  { value: "all", label: "All lanes" },
-  ...HERO_LANES.map((l) => ({ value: l, label: laneLabels[l] })),
-];
 
 /** Counter pick: enemies in, ranked counters out. State lives in the URL. */
 export function CounterPickView({
@@ -57,6 +49,18 @@ export function CounterPickView({
   knowledge: HeroKnowledge;
   initial: MatchupSnapshot;
 }) {
+  const locale = useLocale();
+  const t = counterText[locale].view;
+  const tools = toolsText[locale];
+  const labels = common[locale];
+  const roleOptions: ChipOption<HeroRole | "all">[] = [
+    { value: "all", label: t.allRoles },
+    ...HERO_ROLES.map((r) => ({ value: r, label: labels.roles[r] })),
+  ];
+  const laneOptions: ChipOption<HeroLane | "all">[] = [
+    { value: "all", label: t.allLanes },
+    ...HERO_LANES.map((l) => ({ value: l, label: labels.lanes[l] })),
+  ];
   const [params, setParams] = useUrlParams();
   const bracket = rankParam(params.get("rank"));
   const role = oneOf<HeroRole>(params.get("role"), HERO_ROLES);
@@ -105,11 +109,11 @@ export function CounterPickView({
             id="enemy-team-heading"
             className="font-display text-lg font-semibold"
           >
-            Enemy team
+            {t.enemyTeam}
           </h2>
           {enemies.length > 0 ? (
             <Button variant="ghost" size="sm" onClick={() => setEnemies([])}>
-              Clear
+              {t.clear}
             </Button>
           ) : null}
         </div>
@@ -117,7 +121,7 @@ export function CounterPickView({
           heroes={enemies}
           size={TEAM_SIZE}
           side="enemy"
-          teamName="enemy team"
+          teamName={t.teamName}
           onRemove={(hero) => setEnemies(enemies.filter((e) => e !== hero))}
           onEmpty={() => searchRef.current?.focus()}
         />
@@ -126,14 +130,12 @@ export function CounterPickView({
           heroes={popular}
           taken={new Set(enemies.map((e) => e.id))}
           onPick={(hero) => setEnemies([...enemies, hero])}
-          placeholder="Search enemy heroes"
-          caption={`Most picked in ${bracketLabels[snapshot.bracket]} first.`}
-          actionLabel={(name) => `Add ${name} to the enemy team`}
-          blocked={
-            full
-              ? "The enemy team is full. Tap a hero above to remove it."
-              : null
-          }
+          placeholder={t.searchEnemies}
+          caption={tools.picker.mostPickedFirst(
+            labels.brackets[snapshot.bracket],
+          )}
+          actionLabel={t.addToEnemies}
+          blocked={full ? t.enemiesFull : null}
         />
       </section>
 
@@ -145,7 +147,7 @@ export function CounterPickView({
           id="counters-heading"
           className="font-display text-lg font-semibold"
         >
-          Best counters
+          {t.bestCounters}
         </h2>
         <div className="flex flex-col gap-3">
           <RankSelect
@@ -156,7 +158,7 @@ export function CounterPickView({
             }
           />
           <ChipGroup
-            label="Role of the suggested heroes"
+            label={t.roleFilter}
             options={roleOptions}
             value={role}
             onChange={(value) =>
@@ -164,7 +166,7 @@ export function CounterPickView({
             }
           />
           <ChipGroup
-            label="Lane of the suggested heroes"
+            label={t.laneFilter}
             options={laneOptions}
             value={lane}
             onChange={(value) =>
@@ -181,12 +183,12 @@ export function CounterPickView({
           {enemies.length === 0 ? (
             <EmptyState
               icon={CrosshairIcon}
-              title="Add an enemy hero to start"
-              description="Pick up to five enemies. Counters are ranked by matchup statistics, official hero notes and hero tags, and each one shows why."
+              title={t.emptyTitle}
+              description={t.emptyDescription}
             />
           ) : picks.length === 0 ? (
             <p className="rounded-lg border border-dashed bg-surface/60 p-6 text-sm text-muted-foreground">
-              No hero matches this role and lane.
+              {t.noMatch}
             </p>
           ) : (
             <CounterResults
@@ -214,8 +216,11 @@ function CounterResults({
   byId: ReadonlyMap<number, HeroSummary>;
   bracket: RankBracket;
 }) {
+  const locale = useLocale();
+  const t = counterText[locale].view;
   const [count, setCount] = useState(PAGE_SIZE);
-  const nameOf = (id: number) => byId.get(id)?.name ?? "Unknown hero";
+  const nameOf = (id: number) =>
+    byId.get(id)?.name ?? toolsText[locale].unknownHero;
   // The weakest picks only show when the list is long enough to set them apart.
   const weakest =
     picks.length > PAGE_SIZE + WEAKEST_SHOWN
@@ -245,7 +250,7 @@ function CounterResults({
           className="self-start"
           onClick={() => setCount((c) => c + PAGE_SIZE)}
         >
-          Show {Math.min(PAGE_SIZE, listable - shown.length)} more
+          {t.showMore(Math.min(PAGE_SIZE, listable - shown.length))}
         </Button>
       ) : null}
       {weakest.length > 0 ? (
@@ -254,7 +259,7 @@ function CounterResults({
           className="flex flex-col gap-2"
         >
           <h3 id="weakest-heading" className="font-medium">
-            Weakest picks into this team
+            {t.weakest}
           </h3>
           <ul className="flex flex-col divide-y rounded-lg border bg-surface">
             {weakest.map((pick) => {
@@ -276,7 +281,7 @@ function CounterResults({
                       {hero.name}
                     </span>
                     <span className="font-display font-semibold tabular-nums">
-                      {formatPoints(pick.score)}
+                      {formatPoints(pick.score, 1, locale)}
                     </span>
                   </Link>
                 </li>
@@ -304,6 +309,10 @@ function CounterRow({
   nameOf: (id: number) => string;
   bracket: RankBracket;
 }) {
+  const locale = useLocale();
+  const t = counterText[locale].view;
+  const tools = toolsText[locale].suggestion;
+  const rankLabel = common[locale].brackets[bracket];
   const hero = byId.get(pick.heroId);
   if (!hero) return null;
   const meta = index.meta.get(pick.heroId);
@@ -331,15 +340,15 @@ function CounterRow({
           {meta?.tier ? <TierBadge tier={meta.tier} size="sm" /> : null}
           {pick.limitedData ? (
             <span className="text-xs text-muted-foreground">
-              {index.tags.has(pick.heroId) ? "Tags and meta only" : "Meta only"}
+              {index.tags.has(pick.heroId) ? t.tagsAndMetaOnly : t.metaOnly}
             </span>
           ) : null}
         </div>
         <div className="flex flex-col items-end sm:row-span-2">
           <span className="font-display text-xl font-bold tabular-nums">
-            {formatPoints(pick.score)}
+            {formatPoints(pick.score, 1, locale)}
           </span>
-          <span className="text-xs text-muted-foreground">score</span>
+          <span className="text-xs text-muted-foreground">{tools.score}</span>
         </div>
         <ul className="col-span-full flex flex-wrap gap-x-3 gap-y-1 sm:col-span-1 sm:col-start-3 sm:row-start-2 sm:self-start">
           {pick.edges.map((edge) => {
@@ -353,7 +362,7 @@ function CounterRow({
                   decorative
                 />
                 <span className="sr-only">
-                  Against {nameOf(edge.opponentId)}:
+                  {`${tools.against(nameOf(edge.opponentId))}:`}
                 </span>
                 <Points value={edge.points.total} />
               </li>
@@ -367,30 +376,33 @@ function CounterRow({
             className="size-4 transition-transform group-open:rotate-180"
             aria-hidden
           />
-          Why {hero.name}
+          {tools.why(hero.name)}
         </summary>
         <div className="flex flex-col gap-4 px-3 pb-4 sm:pl-11">
           {pick.edges.map((edge) => (
             <div key={edge.opponentId} className="flex flex-col gap-1.5">
               <h4 className="flex items-center gap-2 text-sm font-medium">
-                Against {nameOf(edge.opponentId)}
+                {tools.against(nameOf(edge.opponentId))}
                 <Points value={edge.points.total} />
               </h4>
               <ReasonList
-                lines={edgeLines(edge, nameOf)}
-                empty="No statistics, official notes or tag effects for this pair."
+                lines={edgeLines(edge, nameOf, locale)}
+                empty={tools.noEdgeReasons}
               />
             </div>
           ))}
           <div className="flex flex-col gap-1.5">
-            <h4 className="text-sm font-medium">Current form</h4>
+            <h4 className="text-sm font-medium">{tools.currentForm}</h4>
             <ReasonList
               lines={[
                 {
                   points: pick.metaPoints,
                   text: meta
-                    ? `Adjusted win rate ${formatPercent(meta.adjustedWinRate)} in ${bracketLabels[bracket]}`
-                    : `No statistics in ${bracketLabels[bracket]} yet`,
+                    ? t.adjustedWinRate(
+                        formatPercent(meta.adjustedWinRate, 1, locale),
+                        rankLabel,
+                      )
+                    : t.noStats(rankLabel),
                 },
               ]}
               empty=""

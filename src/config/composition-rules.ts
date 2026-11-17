@@ -1,4 +1,11 @@
+import {
+  type CompositionRuleId,
+  compositionText,
+} from "@/i18n/messages/composition";
 import type { TagLevelKey } from "@/types/data";
+
+/** English label and hint of each check, from src/i18n/messages/composition.ts. */
+const en = compositionText.en.rules;
 
 /**
  * The team composition checklist, used by Matchup (team against team) and,
@@ -17,15 +24,13 @@ export const COMPOSITION_RULES = {
     {
       id: "lanes",
       kind: "lanes",
-      label: "Every lane covered",
-      hint: "Two or more heroes want the same lane, so one lane has no specialist.",
+      ...en.lanes,
       weight: 2,
     },
     {
       id: "frontline",
       kind: "tag",
-      label: "Frontline",
-      hint: "No one can take hits at the front, so fights start badly.",
+      ...en.frontline,
       tag: "frontline",
       ok: 3,
       weak: 2,
@@ -34,8 +39,7 @@ export const COMPOSITION_RULES = {
     {
       id: "hard_cc",
       kind: "tag",
-      label: "Hard crowd control",
-      hint: "Too little crowd control to start a fight or stop a diving enemy.",
+      ...en.hard_cc,
       tag: "hard_cc",
       ok: 5,
       weak: 3,
@@ -44,15 +48,13 @@ export const COMPOSITION_RULES = {
     {
       id: "damage_mix",
       kind: "damage",
-      label: "Physical and magic damage",
-      hint: "Nearly all damage is one type, so the enemy can stack one kind of defense.",
+      ...en.damage_mix,
       weight: 1.5,
     },
     {
       id: "peel",
       kind: "tag",
-      label: "Peel for carries",
-      hint: "Little protection for the damage dealers when enemies dive them.",
+      ...en.peel,
       tag: "peel",
       ok: 2,
       weak: 1,
@@ -61,8 +63,7 @@ export const COMPOSITION_RULES = {
     {
       id: "aoe_damage",
       kind: "tag",
-      label: "Area damage",
-      hint: "Little damage that hits several enemies, so team fights drag on.",
+      ...en.aoe_damage,
       tag: "aoe_damage",
       ok: 5,
       weak: 3,
@@ -71,8 +72,7 @@ export const COMPOSITION_RULES = {
     {
       id: "pickoff",
       kind: "tag",
-      label: "Pick-off",
-      hint: "Few ways to catch a lone enemy out of position.",
+      ...en.pickoff,
       tag: "pickoff",
       ok: 5,
       weak: 3,
@@ -81,8 +81,7 @@ export const COMPOSITION_RULES = {
     {
       id: "push",
       kind: "tag",
-      label: "Turret push",
-      hint: "Slow at taking turrets once a fight is won.",
+      ...en.push,
       tag: "push",
       ok: 3,
       weak: 2,
@@ -91,8 +90,7 @@ export const COMPOSITION_RULES = {
     {
       id: "scaling",
       kind: "tag",
-      label: "Late game",
-      hint: "The team falls off late; aim to win the early game.",
+      ...en.scaling,
       tag: "scaling",
       ok: 7,
       weak: 6,
@@ -105,15 +103,17 @@ export const COMPOSITION_RULES = {
 
 export type CompositionCheck =
   | {
-      id: string;
+      /** Key of the check's texts in src/i18n/messages/composition.ts. */
+      id: CompositionRuleId;
       kind: "lanes" | "damage";
+      /** English name; on screen use compositionRuleText(locale, check). */
       label: string;
-      /** What a missing or weak check means, in plain words. */
+      /** What a missing or weak check means, in plain words (English). */
       hint: string;
       weight: number;
     }
   | {
-      id: string;
+      id: CompositionRuleId;
       kind: "tag";
       label: string;
       hint: string;

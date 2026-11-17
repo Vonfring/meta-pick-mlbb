@@ -1,41 +1,51 @@
+"use client";
+
 import {
   CheckCircleIcon,
   WarningCircleIcon,
   XCircleIcon,
 } from "@/components/icons";
+import { useLocale } from "@/i18n/client";
+import type { Locale } from "@/i18n/config";
+import { common } from "@/i18n/messages/common";
+import {
+  compositionRuleText,
+  compositionText,
+} from "@/i18n/messages/composition";
+import { formatDecimal } from "@/lib/format";
 import type {
   CheckResult,
   CheckStatus,
   CompositionReport,
 } from "@/lib/scoring/composition";
 import { cn } from "@/lib/utils";
-import { laneLabels } from "@/types/domain";
 
 const status: Record<
   CheckStatus,
-  { icon: typeof CheckCircleIcon; label: string; className: string }
+  { icon: typeof CheckCircleIcon; className: string }
 > = {
-  ok: { icon: CheckCircleIcon, label: "OK", className: "text-positive" },
-  weak: {
-    icon: WarningCircleIcon,
-    label: "Weak",
-    className: "text-foreground",
-  },
-  missing: { icon: XCircleIcon, label: "Missing", className: "text-negative" },
+  ok: { icon: CheckCircleIcon, className: "text-positive" },
+  weak: { icon: WarningCircleIcon, className: "text-foreground" },
+  missing: { icon: XCircleIcon, className: "text-negative" },
 };
 
-const count = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+const count = (n: number, locale: Locale) =>
+  Number.isInteger(n) ? String(n) : formatDecimal(n, 1, locale);
 
-function detail(check: CheckResult, complete: boolean): string {
+function detail(check: CheckResult, complete: boolean, locale: Locale): string {
+  const t = compositionText[locale].checklist;
   switch (check.kind) {
     case "tag":
-      return `${check.total} (needs ${check.ok})`;
+      return t.tagDetail(check.total, check.ok);
     case "lanes":
       return complete && check.open.length > 0
-        ? `Open: ${check.open.map((l) => laneLabels[l]).join(", ")}`
-        : `${check.covered} of ${check.needed} ${check.needed === 1 ? "hero gets its" : "heroes get their"} own lane`;
+        ? t.openLanes(check.open.map((l) => common[locale].lanes[l]).join(", "))
+        : t.lanesCovered(check.covered, check.needed);
     case "damage":
-      return `${count(check.physical)} physical, ${count(check.magic)} magic`;
+      return t.damageDetail(
+        count(check.physical, locale),
+        count(check.magic, locale),
+      );
   }
 }
 
@@ -52,11 +62,15 @@ export function CompositionChecklist({
   showHints?: boolean;
   className?: string;
 }) {
+  const locale = useLocale();
+  const t = compositionText[locale];
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <ul className="flex flex-col gap-1.5">
         {report.checks.map((check) => {
           const s = status[check.status];
+          const label = t.status[check.status];
+          const text = compositionRuleText(locale, check);
           const Icon = s.icon;
           return (
             <li
@@ -70,19 +84,19 @@ export function CompositionChecklist({
               />
               <span className="flex flex-wrap items-baseline justify-between gap-x-2">
                 <span>
-                  <span className="font-medium">{check.label}</span>
+                  <span className="font-medium">{text.label}</span>
                   {check.status === "ok" ? (
-                    <span className="sr-only">: {s.label}.</span>
+                    <span className="sr-only">: {label}.</span>
                   ) : (
                     <span
                       className={cn("ml-1.5 text-xs font-medium", s.className)}
                     >
-                      {s.label}
+                      {label}
                     </span>
                   )}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {detail(check, report.complete)}
+                  {detail(check, report.complete, locale)}
                 </span>
                 {/* A partial team misses most checks; only a lane clash
                     means something before the team is full. */}
@@ -90,7 +104,7 @@ export function CompositionChecklist({
                 check.status !== "ok" &&
                 (report.complete || check.kind === "lanes") ? (
                   <span className="basis-full pt-0.5 text-xs text-muted-foreground">
-                    {check.hint}
+                    {text.hint}
                   </span>
                 ) : null}
               </span>
@@ -100,9 +114,10 @@ export function CompositionChecklist({
       </ul>
       {report.untagged.length > 0 ? (
         <p className="text-xs text-muted-foreground">
-          No hero tags yet for {report.untagged.map(nameOf).join(", ")}, so the
-          tag checks count{" "}
-          {report.untagged.length === 1 ? "this hero" : "these heroes"} as zero.
+          {t.checklist.untagged(
+            report.untagged.map(nameOf).join(", "),
+            report.untagged.length,
+          )}
         </p>
       ) : null}
     </div>

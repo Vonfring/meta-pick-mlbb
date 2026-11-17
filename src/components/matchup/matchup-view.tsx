@@ -6,6 +6,9 @@ import { SnapshotNote } from "@/components/meta-stats/snapshot-note";
 import { useToolData } from "@/components/tools/use-tool-data";
 import { ChipGroup } from "@/components/ui/chip-group";
 import { DEFAULT_BRACKET } from "@/config/filters";
+import { useLocale } from "@/i18n/client";
+import { matchupText } from "@/i18n/messages/matchup";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroKnowledge, HeroSummary, MatchupSnapshot } from "@/lib/data";
 import type { HeroIndex } from "@/lib/scoring/hero-index";
 import { rankParam, useUrlParams } from "@/lib/use-url-params";
@@ -14,11 +17,8 @@ import type { RankBracket } from "@/types/domain";
 import { HeroVsHero } from "./hero-vs-hero";
 import { TeamVsTeam } from "./team-vs-team";
 
-const MODES = [
-  { value: "hero", label: "Hero against hero" },
-  { value: "team", label: "Team against team" },
-] as const;
-type Mode = (typeof MODES)[number]["value"];
+const MODES = ["hero", "team"] as const;
+type Mode = (typeof MODES)[number];
 
 /** What both matchup modes read from. */
 export type MatchupTools = {
@@ -45,6 +45,9 @@ export function MatchupView({
   knowledge: HeroKnowledge;
   initial: MatchupSnapshot;
 }) {
+  const locale = useLocale();
+  const t = matchupText[locale].modes;
+  const unknownHero = toolsText[locale].unknownHero;
   const [params, setParams] = useUrlParams();
   const mode: Mode = params.get("mode") === "team" ? "team" : "hero";
   const bracket = rankParam(params.get("rank"));
@@ -59,9 +62,9 @@ export function MatchupView({
     return {
       byId,
       bySlug: new Map(heroes.map((h) => [h.slug, h])),
-      nameOf: (id: number) => byId.get(id)?.name ?? "Unknown hero",
+      nameOf: (id: number) => byId.get(id)?.name ?? unknownHero,
     };
-  }, [heroes]);
+  }, [heroes, unknownHero]);
   const tools: MatchupTools = {
     heroes,
     ...lookups,
@@ -76,8 +79,8 @@ export function MatchupView({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <ChipGroup
-          label="Compare"
-          options={MODES}
+          label={t.label}
+          options={MODES.map((value) => ({ value, label: t[value] }))}
           value={mode}
           onChange={(value) =>
             setParams({ mode: value === "hero" ? null : value })

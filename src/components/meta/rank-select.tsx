@@ -1,7 +1,10 @@
 "use client";
 
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
+import { metaText } from "@/i18n/messages/meta";
 import { cn } from "@/lib/utils";
-import { bracketLabels, RANK_BRACKETS, type RankBracket } from "@/types/domain";
+import { RANK_BRACKETS, type RankBracket } from "@/types/domain";
 
 export const selectClass =
   "h-10 w-full rounded-md border bg-surface px-3 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring";
@@ -16,6 +19,8 @@ export function RankSelect({
   onChange: (bracket: RankBracket) => void;
   className?: string;
 }) {
+  const locale = useLocale();
+  const brackets = common[locale].brackets;
   return (
     <label
       className={cn(
@@ -23,7 +28,7 @@ export function RankSelect({
         className,
       )}
     >
-      Rank
+      {metaText[locale].filters.rank}
       <select
         className={selectClass}
         value={value}
@@ -31,7 +36,7 @@ export function RankSelect({
       >
         {RANK_BRACKETS.map((b) => (
           <option key={b} value={b}>
-            {bracketLabels[b]}
+            {brackets[b]}
           </option>
         ))}
       </select>

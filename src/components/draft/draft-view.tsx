@@ -13,7 +13,7 @@ import { LaneFilter } from "@/components/tools/lane-filter";
 import { PickSuggestionRow } from "@/components/tools/pick-suggestion";
 import { StrengthCard } from "@/components/tools/strength";
 import { useToolData } from "@/components/tools/use-tool-data";
-import { EstimateBar, verdictText } from "@/components/tools/verdict-banner";
+import { EstimateBar } from "@/components/tools/verdict-banner";
 import { Button } from "@/components/ui/button";
 import { ChipGroup } from "@/components/ui/chip-group";
 import {
@@ -31,6 +31,10 @@ import {
   type DraftPresetId,
   type DraftTeam,
 } from "@/config/draft-order";
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
+import { draftText } from "@/i18n/messages/draft";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroKnowledge, HeroSummary, MatchupSnapshot } from "@/lib/data";
 import {
   currentStep,
@@ -58,25 +62,21 @@ import type { HeroIndex } from "@/lib/scoring/hero-index";
 import { teamMatchup } from "@/lib/scoring/matchup";
 import { rankParam, useUrlParams } from "@/lib/use-url-params";
 import { cn } from "@/lib/utils";
-import { bracketLabels, type RankBracket } from "@/types/domain";
-import { DraftTeamPanel, teamName } from "./draft-board";
+import type { RankBracket } from "@/types/domain";
+import { DraftTeamPanel } from "./draft-board";
 import { preloadGsap } from "./lock-in";
 
 const PRESET_IDS = Object.keys(DRAFT_PRESETS) as DraftPresetId[];
-const SIDES = [
-  { value: "blue", label: "I play blue" },
-  { value: "red", label: "I play red" },
-] as const;
+const SIDES = ["blue", "red"] as const;
 
-/** "Ban phase 1, blind" or "Pick phase 2". */
-function phaseLabel(steps: readonly DraftStep[], step: DraftStep) {
+/** Which ban or pick phase a step is in, counted per action: 2 for "Pick phase 2". */
+function phaseNumber(steps: readonly DraftStep[], step: DraftStep) {
   const sameAction = [
     ...new Set(
       steps.filter((s) => s.action === step.action).map((s) => s.phase),
     ),
   ];
-  const number = sameAction.indexOf(step.phase) + 1;
-  return `${step.action === "ban" ? "Ban" : "Pick"} phase ${number}${step.blind ? ", blind" : ""}`;
+  return sameAction.indexOf(step.phase) + 1;
 }
 
 /** The finished teams on Matchup, with the same rank. */
@@ -102,6 +102,9 @@ export function DraftView({
   knowledge: HeroKnowledge;
   initial: MatchupSnapshot;
 }) {
+  const locale = useLocale();
+  const t = draftText[locale];
+  const tools = toolsText[locale];
   const [params, setParams] = useUrlParams();
   const presetParam = params.get("preset");
   const presetId: DraftPresetId =
@@ -142,8 +145,8 @@ export function DraftView({
     preloadGsap().catch(() => {});
   }, []);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const nameOf = (id: number) => byId.get(id)?.name ?? "Unknown hero";
-  const rankLabel = bracketLabels[snapshot.bracket];
+  const nameOf = (id: number) => byId.get(id)?.name ?? tools.unknownHero;
+  const rankLabel = common[locale].brackets[snapshot.bracket];
 
   const write = (next: Slot[]) =>
     setParams({ d: serializeSlots(next, (id) => byId.get(id)?.slug ?? "_") });
@@ -178,10 +181,9 @@ export function DraftView({
   const empty = slots.every((hero) => hero === null);
 
   const mine = current?.team === side;
-  const verb = current?.action === "ban" ? "Ban" : "Pick";
   const pickerLabel = current
-    ? `${verb} for the ${current.team} team`
-    : "Search heroes";
+    ? t.picker.label(current.action, current.team)
+    : tools.picker.searchHeroes;
   const picker = (inline: boolean) => (
     <HeroPicker
       gridWhenEmpty={!inline}
@@ -194,13 +196,13 @@ export function DraftView({
       placeholder={pickerLabel}
       caption={
         inline
-          ? "Type a hero's name, or pick from the suggestions."
-          : `Most picked in ${rankLabel} first.`
+          ? t.picker.inlineCaption
+          : tools.picker.mostPickedFirst(rankLabel)
       }
       actionLabel={(name) =>
-        current ? `${verb} ${name} for the ${current.team} team` : name
+        current ? t.picker.action(current.action, name, current.team) : name
       }
-      blocked={current ? null : "The draft is complete. Undo to change a step."}
+      blocked={current ? null : t.picker.complete}
     />
   );
 
@@ -209,7 +211,7 @@ export function DraftView({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:items-end">
           <label className="flex flex-col gap-1 text-sm text-muted-foreground lg:w-60">
-            Draft order
+            {t.controls.order}
             <select
               className={selectClass}
               value={presetId}
@@ -224,7 +226,7 @@ export function DraftView({
             >
               {PRESET_IDS.map((id) => (
                 <option key={id} value={id}>
-                  {DRAFT_PRESETS[id].label}
+                  {t.presets[id].label}
                 </option>
               ))}
             </select>
@@ -239,8 +241,11 @@ export function DraftView({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ChipGroup
-            label="Your side"
-            options={SIDES}
+            label={t.controls.side}
+            options={SIDES.map((value) => ({
+              value,
+              label: t.controls.sides[value],
+            }))}
             value={side}
             onChange={(value) =>
               setParams({ side: value === DEFAULT_SIDE ? null : value })
@@ -256,12 +261,12 @@ export function DraftView({
             }}
           >
             <ArrowClockwiseIcon aria-hidden />
-            Reset
+            {t.controls.reset}
           </Button>
         </div>
       </div>
       <p className="-mt-3 text-sm text-muted-foreground">
-        {DRAFT_PRESETS[presetId].description}
+        {t.presets[presetId].description}
       </p>
       <SnapshotNote data={snapshot} loading={loading} error={error} />
 
@@ -270,7 +275,7 @@ export function DraftView({
         className={cn("grid gap-6 lg:items-start", current && "lg:grid-cols-2")}
       >
         <section
-          aria-label="Board"
+          aria-label={t.board.label}
           className="flex flex-col gap-5 rounded-lg border bg-[linear-gradient(to_top_right,var(--ally-soft)_calc(50%-1px),var(--border)_calc(50%-1px)_calc(50%+1px),var(--enemy-soft)_calc(50%+1px))] p-4 sm:p-6 lg:order-2"
         >
           <DraftTeamPanel
@@ -326,8 +331,7 @@ export function DraftView({
                 <DrawerHeader>
                   <DrawerTitle>{pickerLabel}</DrawerTitle>
                   <DrawerDescription>
-                    Search, or tap a portrait. The most picked heroes come
-                    first.
+                    {t.picker.drawerDescription}
                   </DrawerDescription>
                 </DrawerHeader>
                 <div className="overflow-y-auto px-4">{picker(false)}</div>
@@ -361,21 +365,18 @@ export function DraftView({
             id="result-heading"
             className="font-display text-xl font-semibold"
           >
-            Result
+            {t.result.title}
           </h2>
           <div className="flex flex-col gap-3 rounded-lg border bg-surface p-4">
             <p className="font-display text-xl font-bold">
-              {verdictText(matchup.verdict, "Blue team", "Red team")}
+              {t.result.verdict(matchup.verdict)}
             </p>
             <EstimateBar
               first={matchup.verdict.estimate}
-              firstName="Blue team"
-              secondName="Red team"
+              firstName={t.teams.blue}
+              secondName={t.teams.red}
             />
-            <p className="text-xs text-muted-foreground">
-              Rule-based estimate from form, counters, synergy and composition,
-              not a prediction.
-            </p>
+            <p className="text-xs text-muted-foreground">{t.result.note}</p>
             <Link
               href={matchupHref(
                 bluePicks.flatMap((id) => byId.get(id) ?? []),
@@ -384,7 +385,7 @@ export function DraftView({
               )}
               className="text-sm font-medium text-ally-text hover:underline"
             >
-              See the full breakdown in Matchup
+              {t.result.breakdown}
             </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -392,7 +393,7 @@ export function DraftView({
               <div key={team} className="flex flex-col gap-4">
                 <StrengthCard
                   strength={strength[team]}
-                  title={`${teamName[team]} strength`}
+                  title={t.result.strength(team)}
                 />
                 {strength[team] ? (
                   <div className="rounded-lg border bg-surface p-4">
@@ -460,6 +461,7 @@ function TurnBanner({
   onSkip: () => void;
   estimate: number | null;
 }) {
+  const t = draftText[useLocale()];
   const position = current ? turnPosition(steps, side, current) : null;
   return (
     <div className="flex flex-col gap-3 rounded-md border bg-surface/90 p-3 sm:p-4">
@@ -468,23 +470,30 @@ function TurnBanner({
           {current && position ? (
             <>
               <p className="text-xs text-muted-foreground">
-                {phaseLabel(steps, current)}
+                {t.turn.phase(
+                  current.action,
+                  phaseNumber(steps, current),
+                  current.blind,
+                )}
               </p>
               <p className="font-display text-lg font-bold">
-                {current.team === side
-                  ? "Your turn"
-                  : `${teamName[current.team]}'s turn`}
-                : {current.action} {position.number} of {position.of}
+                {t.turn.turn(
+                  current.team,
+                  current.team === side,
+                  current.action,
+                  position.number,
+                  position.of,
+                )}
               </p>
             </>
           ) : (
-            <p className="font-display text-lg font-bold">Draft complete</p>
+            <p className="font-display text-lg font-bold">{t.turn.complete}</p>
           )}
         </div>
         <div className="flex gap-1">
           {current?.action === "ban" ? (
             <Button variant="ghost" size="sm" onClick={onSkip}>
-              No ban
+              {t.turn.skipBan}
             </Button>
           ) : null}
           <Button
@@ -493,27 +502,23 @@ function TurnBanner({
             disabled={!canUndo}
             onClick={onUndo}
           >
-            Undo
+            {t.turn.undo}
           </Button>
         </div>
       </div>
       {current?.blind ? (
         <p className="text-xs text-muted-foreground">
-          {current.team === side
-            ? "Blind bans: the enemy only sees them when the phase ends."
-            : "Enter the enemy's bans. In the game both teams ban at the same time, so the same hero can be banned twice."}
+          {current.team === side ? t.turn.blindOwn : t.turn.blindEnemy}
         </p>
       ) : null}
       {estimate !== null ? (
         <div className="flex flex-col gap-1">
           <EstimateBar
             first={estimate}
-            firstName="Blue team"
-            secondName="Red team"
+            firstName={t.teams.blue}
+            secondName={t.teams.red}
           />
-          <p className="text-xs text-muted-foreground">
-            Rule-based estimate from the picks so far.
-          </p>
+          <p className="text-xs text-muted-foreground">{t.turn.estimateNote}</p>
         </div>
       ) : null}
     </div>
@@ -562,34 +567,36 @@ function SuggestionList({
       ),
     [index, allIds, current, slots, steps, openLanesOnly],
   );
+  const locale = useLocale();
+  const text = draftText[locale];
+  const t = text.suggestions;
   const team = current.team;
-  const verb = current.action === "ban" ? "Ban" : "Pick";
   const heading = mine
     ? current.action === "pick"
-      ? "Suggested picks"
-      : "Suggested bans"
-    : "Watch out for";
+      ? t.picks
+      : t.bans
+    : t.watchOut;
   const firstBan =
     suggestions.kind === "ban" && suggestions.items[0]?.kind === "meta";
   const description = mine
     ? current.action === "pick"
-      ? "Ranked by counters, synergy, what the team still lacks and current form."
+      ? t.pickDescription
       : firstBan
-        ? `The strongest heroes in ${rankLabel} by tier score.`
-        : "What each hero would bring to the enemy team."
+        ? t.firstBanDescription(rankLabel)
+        : t.banDescription
     : current.action === "pick"
-      ? `The heroes that would help the ${team} team most. Tap one if the enemy took it, or search above.`
+      ? t.enemyPickDescription(team)
       : firstBan
-        ? `The strongest heroes in ${rankLabel}, which the enemy is likely to ban.`
-        : "The heroes that would help your team most, which the enemy may ban.";
+        ? t.enemyFirstBanDescription(rankLabel)
+        : t.enemyBanDescription;
   const action = (hero: HeroSummary) => (
     <Button
       variant={mine ? "primary" : "outline"}
       size="sm"
-      aria-label={`${verb} ${hero.name} for the ${team} team`}
+      aria-label={text.picker.action(current.action, hero.name, team)}
       onClick={() => onChoose(hero.id)}
     >
-      {verb}
+      {t.verbs[current.action]}
     </Button>
   );
 
@@ -668,8 +675,10 @@ function SuggestionList({
                       ) : null}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      Win rate {formatPercent(meta?.winRate)}, banned in{" "}
-                      {formatPercent(meta?.banRate)} of games
+                      {t.metaLine(
+                        formatPercent(meta?.winRate, 1, locale),
+                        formatPercent(meta?.banRate, 1, locale),
+                      )}
                     </span>
                   </span>
                   {action(hero)}

@@ -12,16 +12,22 @@ import { HeroSlots } from "@/components/tools/hero-slots";
 import { useNoteTexts } from "@/components/tools/note-texts";
 import { VerdictBanner } from "@/components/tools/verdict-banner";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
+import { matchupText } from "@/i18n/messages/matchup";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroSummary } from "@/lib/data";
 import { formatPercent } from "@/lib/format";
 import { parseHeroList } from "@/lib/hero-list-param";
 import { edgeLines } from "@/lib/scoring/explain";
 import { heroMatchup, type HeroMatchup } from "@/lib/scoring/matchup";
-import { bracketLabels } from "@/types/domain";
 import type { MatchupTools } from "./matchup-view";
 
 /** Two heroes head to head: ?hero=khufra&vs=fanny. */
 export function HeroVsHero({ tools }: { tools: MatchupTools }) {
+  const locale = useLocale();
+  const m = matchupText[locale];
+  const t = m.hero;
   const { bySlug, params, setParams, index, popular } = tools;
   const first = parseHeroList(params.get("hero"), bySlug, 1)[0];
   const picked = parseHeroList(params.get("vs"), bySlug, 1)[0];
@@ -45,7 +51,7 @@ export function HeroVsHero({ tools }: { tools: MatchupTools }) {
             id="heroes-heading"
             className="font-display text-lg font-semibold"
           >
-            Heroes
+            {t.heading}
           </h2>
           {first || second ? (
             <Button
@@ -54,7 +60,7 @@ export function HeroVsHero({ tools }: { tools: MatchupTools }) {
               onClick={() => set(second, first)}
             >
               <ArrowsLeftRightIcon aria-hidden />
-              Swap
+              {m.swap}
             </Button>
           ) : null}
         </div>
@@ -63,7 +69,7 @@ export function HeroVsHero({ tools }: { tools: MatchupTools }) {
             heroes={first ? [first] : []}
             size={1}
             side="ally"
-            teamName="blue side"
+            teamName={t.slots.blue}
             onRemove={() => set(undefined, second)}
             onEmpty={focusSearch}
             active={!first}
@@ -75,7 +81,7 @@ export function HeroVsHero({ tools }: { tools: MatchupTools }) {
             heroes={second ? [second] : []}
             size={1}
             side="enemy"
-            teamName="red side"
+            teamName={t.slots.red}
             onRemove={() => set(first, undefined)}
             onEmpty={focusSearch}
             active={Boolean(first) && !second}
@@ -86,20 +92,16 @@ export function HeroVsHero({ tools }: { tools: MatchupTools }) {
           heroes={popular}
           taken={new Set([first, second].flatMap((h) => (h ? [h.id] : [])))}
           onPick={(hero) => (first ? set(first, hero) : set(hero, second))}
-          placeholder="Search heroes"
-          caption={`Most picked in ${bracketLabels[tools.bracket]} first.`}
-          actionLabel={(name) =>
-            `Pick ${name} for the ${first ? "red" : "blue"} side`
-          }
-          blocked={
-            first && second
-              ? "Both heroes are picked. Tap one to change it."
-              : null
-          }
+          placeholder={toolsText[locale].picker.searchHeroes}
+          caption={toolsText[locale].picker.mostPickedFirst(
+            common[locale].brackets[tools.bracket],
+          )}
+          actionLabel={(name) => t.pickFor(name, first ? "red" : "blue")}
+          blocked={first && second ? t.bothPicked : null}
         />
       </section>
 
-      <section aria-label="Result" className="flex min-w-0 flex-col gap-6">
+      <section aria-label={m.result} className="flex min-w-0 flex-col gap-6">
         {result && first && second ? (
           <HeroResult
             result={result}
@@ -110,8 +112,8 @@ export function HeroVsHero({ tools }: { tools: MatchupTools }) {
         ) : (
           <EmptyState
             icon={ScalesIcon}
-            title="Pick two heroes"
-            description="The first hero plays on the blue side, the second on the red side. The comparison uses matchup statistics, official hero notes, hero tags and current form."
+            title={t.emptyTitle}
+            description={t.emptyDescription}
           />
         )}
       </section>
@@ -178,27 +180,31 @@ function HeroResult({
   second: HeroSummary;
   tools: MatchupTools;
 }) {
+  const locale = useLocale();
+  const m = matchupText[locale];
+  const t = m.hero;
   const { edge, metaPoints, verdict } = result;
   const { nameOf, index, bracket } = tools;
+  const rankLabel = common[locale].brackets[bracket];
   const texts = useNoteTexts(edge.notes.length > 0);
   const rows = [
-    { label: "Head to head", points: edge.points.stats },
-    { label: "Official notes", points: edge.points.notes },
-    { label: "Hero tags", points: edge.points.tags },
-    { label: "Current form", points: metaPoints },
+    { label: t.headToHead, points: edge.points.stats },
+    { label: t.officialNotes, points: edge.points.notes },
+    { label: t.heroTags, points: edge.points.tags },
+    { label: toolsText[locale].suggestion.currentForm, points: metaPoints },
   ];
   const metaA = index.meta.get(first.id);
   const metaB = index.meta.get(second.id);
   const form = [
-    { label: "Win rate", a: metaA?.winRate, b: metaB?.winRate, digits: 1 },
+    { label: t.winRate, a: metaA?.winRate, b: metaB?.winRate, digits: 1 },
     {
-      label: "Adjusted win rate",
+      label: t.adjustedWinRate,
       a: metaA?.adjustedWinRate,
       b: metaB?.adjustedWinRate,
       digits: 1,
     },
-    { label: "Pick rate", a: metaA?.pickRate, b: metaB?.pickRate, digits: 2 },
-    { label: "Ban rate", a: metaA?.banRate, b: metaB?.banRate, digits: 1 },
+    { label: t.pickRate, a: metaA?.pickRate, b: metaB?.pickRate, digits: 2 },
+    { label: t.banRate, a: metaA?.banRate, b: metaB?.banRate, digits: 1 },
   ];
 
   return (
@@ -208,10 +214,20 @@ function HeroResult({
         firstName={first.name}
         secondName={second.name}
         first={
-          <SideHero hero={first} side="Blue side" align="start" tools={tools} />
+          <SideHero
+            hero={first}
+            side={t.sides.blue}
+            align="start"
+            tools={tools}
+          />
         }
         second={
-          <SideHero hero={second} side="Red side" align="end" tools={tools} />
+          <SideHero
+            hero={second}
+            side={t.sides.red}
+            align="end"
+            tools={tools}
+          />
         }
       />
 
@@ -224,10 +240,10 @@ function HeroResult({
             id="breakdown-heading"
             className="font-display text-lg font-semibold"
           >
-            Breakdown
+            {m.breakdown}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Points up favor {first.name}, points down favor {second.name}.
+            {t.breakdownHint(first.name, second.name)}
           </p>
         </div>
         <dl className="divide-y rounded-lg border bg-surface">
@@ -243,7 +259,7 @@ function HeroResult({
             </div>
           ))}
           <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold">
-            <dt>Total</dt>
+            <dt>{m.total}</dt>
             <dd>
               <Points value={verdict.total} />
             </dd>
@@ -256,17 +272,17 @@ function HeroResult({
         className="flex flex-col gap-3"
       >
         <h3 id="reasons-heading" className="font-display text-lg font-semibold">
-          Why
+          {t.why}
         </h3>
         <ReasonList
-          lines={edgeLines(edge, nameOf)}
-          empty={`Neither hero lists the other among its best or worst matchups, there is no official note, and their tags cancel out.`}
+          lines={edgeLines(edge, nameOf, locale)}
+          empty={t.noReasons}
         />
         {edge.statsDelta === null ? (
           <p className="text-sm text-muted-foreground">
             {index.matchups.size === 0
-              ? `No matchup statistics for ${bracketLabels[bracket]} yet.`
-              : "No head-to-head numbers: the official data lists only each hero\u2019s five best and five worst matchups."}
+              ? t.noMatchupStats(rankLabel)
+              : t.noHeadToHead}
           </p>
         ) : null}
         {edge.notes.map((note) => {
@@ -279,7 +295,7 @@ function HeroResult({
             >
               <blockquote className="text-muted-foreground">{text}</blockquote>
               <figcaption className="text-xs text-muted-foreground">
-                From {owner.name}&apos;s official hero page
+                {t.noteSource(owner.name)}
               </figcaption>
             </figure>
           ) : null;
@@ -288,14 +304,14 @@ function HeroResult({
 
       <section aria-labelledby="form-heading" className="flex flex-col gap-3">
         <h3 id="form-heading" className="font-display text-lg font-semibold">
-          Current form in {bracketLabels[bracket]}
+          {t.formHeading(rankLabel)}
         </h3>
         <div className="overflow-hidden rounded-lg border bg-surface">
           <table className="w-full text-sm tabular-nums">
             <thead className="bg-surface-2 text-left text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-2 font-medium">
-                  <span className="sr-only">Number</span>
+                  <span className="sr-only">{t.number}</span>
                 </th>
                 <th
                   scope="col"
@@ -318,10 +334,10 @@ function HeroResult({
                     {row.label}
                   </th>
                   <td className="px-4 py-2 text-right">
-                    {formatPercent(row.a, row.digits)}
+                    {formatPercent(row.a, row.digits, locale)}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {formatPercent(row.b, row.digits)}
+                    {formatPercent(row.b, row.digits, locale)}
                   </td>
                 </tr>
               ))}

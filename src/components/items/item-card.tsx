@@ -1,27 +1,35 @@
 import { CoinsIcon } from "@/components/icons";
-import { type ItemView, itemTierLabels } from "@/lib/catalog/items";
+import type { Locale } from "@/i18n/config";
+import { useLocale } from "@/i18n/client";
+import { catalogText } from "@/i18n/messages/catalog";
+import type { ItemView } from "@/lib/catalog/items";
 import { formatGold } from "@/lib/format";
 
-function Price({ amount }: { amount: number }) {
+function Price({ amount, locale }: { amount: number; locale: Locale }) {
+  const t = catalogText[locale].items;
   return (
     <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium tabular-nums">
       <CoinsIcon className="size-4 text-muted-foreground" aria-hidden />
       {amount === 0 ? (
-        "Free"
+        t.free
       ) : (
         <>
-          {formatGold(amount)}
-          <span className="sr-only"> gold</span>
+          {formatGold(amount, locale)}
+          <span className="sr-only">{t.gold}</span>
         </>
       )}
     </span>
   );
 }
 
+/** One item of the shop. Rendered from the item browser, a Client Component. */
 export function ItemCard({ item }: { item: ItemView }) {
+  const locale = useLocale();
+  const c = catalogText[locale];
+  const t = c.items;
   const recipe = [
-    { label: "Built from", names: item.builtFrom },
-    { label: "Builds into", names: item.buildsInto },
+    { label: t.builtFrom, names: item.builtFrom },
+    { label: t.buildsInto, names: item.buildsInto },
   ].filter((row) => row.names.length > 0);
 
   return (
@@ -31,15 +39,17 @@ export function ItemCard({ item }: { item: ItemView }) {
           <h3 className="leading-snug font-semibold">{item.name}</h3>
           {item.tier !== null ? (
             <p className="text-xs text-muted-foreground">
-              {itemTierLabels[item.tier] ?? `Tier ${item.tier}`}
+              {t.tiers[item.tier] ?? t.tierFallback(item.tier)}
             </p>
           ) : null}
         </div>
-        {item.price !== null ? <Price amount={item.price} /> : null}
+        {item.price !== null ? (
+          <Price amount={item.price} locale={locale} />
+        ) : null}
       </header>
 
       {item.attributes.length > 0 ? (
-        <ul className="flex flex-col gap-0.5 text-sm" aria-label="Stats">
+        <ul className="flex flex-col gap-0.5 text-sm" aria-label={c.stats}>
           {item.attributes.map((attribute) => (
             <li key={attribute.label}>
               <span className="font-medium tabular-nums">

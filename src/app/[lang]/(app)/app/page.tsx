@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "@/components/locale-link";
 import {
   CaretRightIcon,
@@ -8,43 +7,52 @@ import {
   UsersFourIcon,
 } from "@/components/icons";
 import { navGroups } from "@/config/navigation";
+import { common } from "@/i18n/messages/common";
+import { homeText } from "@/i18n/messages/home";
+import { pageMetadata } from "@/i18n/metadata";
+import { getLocale } from "@/i18n/server";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "Find counters and plan your draft",
-  description:
-    "Search the enemy heroes to find who beats them, then plan the draft, check a team or compare a matchup.",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const t = homeText[locale];
+  return pageMetadata(locale, "/app", {
+    title: t.metaTitle,
+    description: t.metaDescription,
+  });
+}
 
 const browseItems = navGroups
-  .filter((group) => group.label !== "Tools")
+  .filter((group) => group.id !== "tools")
   .flatMap((group) => group.items);
 
 /** Where "Open the app" leads: the start of the app, inside the shell. */
-export default function AppStartPage() {
+export default async function AppStartPage() {
+  const locale = await getLocale();
+  const t = homeText[locale];
+  const nav = common[locale].nav.items;
   return (
     <div className="flex flex-col gap-12">
       <section className="flex flex-col gap-5 pt-2 lg:pt-6">
         <h1 className="font-display text-3xl font-bold sm:text-[2.75rem] sm:leading-[1.05]">
-          Who are you facing?
+          {t.title}
         </h1>
         <p className="max-w-[46ch] text-muted-foreground sm:text-lg">
-          Pick up to five enemy heroes and see who beats them, with the numbers
-          behind every suggestion.
+          {t.intro}
         </p>
         <Link
           href="/counter-pick"
           className="flex h-14 w-full max-w-xl items-center gap-3 rounded-md border bg-surface px-4 text-muted-foreground shadow-[var(--shadow-panel)] transition-colors hover:border-ally hover:text-foreground"
         >
           <MagnifyingGlassIcon className="size-5" aria-hidden />
-          <span className="flex-1">Search enemy heroes</span>
+          <span className="flex-1">{t.searchEnemies}</span>
           <CaretRightIcon className="size-4" aria-hidden />
         </Link>
       </section>
 
       <section aria-labelledby="tools-heading" className="flex flex-col gap-4">
         <h2 id="tools-heading" className="font-display text-xl font-semibold">
-          Plan your draft
+          {t.planHeading}
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <Link
@@ -56,33 +64,32 @@ export default function AppStartPage() {
           >
             <span className="flex items-center justify-between">
               <span className="text-sm font-medium text-enemy-text">
-                Enemy side
+                {t.enemySide}
               </span>
               <StrategyIcon className="size-7 text-foreground" aria-hidden />
             </span>
             <span className="flex flex-col gap-1">
               <span className="font-display text-2xl font-bold">
-                Draft master
+                {nav["/draft"].label}
               </span>
               <span className="max-w-[44ch] text-sm text-muted-foreground">
-                Practice ranked ban and pick. Every turn suggests heroes based
-                on counters, synergy and what your team is missing.
+                {t.draftDescription}
               </span>
               <span className="pt-2 text-sm font-medium text-ally-text">
-                Your side
+                {t.yourSide}
               </span>
             </span>
           </Link>
           <ToolLink
             href="/team-composition"
-            title="Team composition"
-            description="Check five heroes for frontline, crowd control, damage mix and late game."
+            title={nav["/team-composition"].label}
+            description={t.teamCompositionDescription}
             icon={UsersFourIcon}
           />
           <ToolLink
             href="/matchup"
-            title="Matchup"
-            description="Compare two heroes, or predict which team is favored and why."
+            title={nav["/matchup"].label}
+            description={t.matchupDescription}
             icon={ScalesIcon}
           />
         </div>
@@ -90,10 +97,10 @@ export default function AppStartPage() {
 
       <section aria-labelledby="browse-heading" className="flex flex-col gap-4">
         <h2 id="browse-heading" className="font-display text-xl font-semibold">
-          Browse the data
+          {t.browseHeading}
         </h2>
         <ul className="grid gap-x-6 sm:grid-cols-2">
-          {browseItems.map(({ href, label, description, icon: Icon }) => (
+          {browseItems.map(({ href, icon: Icon }) => (
             <li key={href}>
               <Link
                 href={href}
@@ -104,9 +111,9 @@ export default function AppStartPage() {
                   aria-hidden
                 />
                 <span className="flex min-w-0 flex-col">
-                  <span className="font-medium">{label}</span>
+                  <span className="font-medium">{nav[href].label}</span>
                   <span className="truncate text-sm text-muted-foreground">
-                    {description}
+                    {nav[href].description}
                   </span>
                 </span>
               </Link>

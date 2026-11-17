@@ -1,9 +1,16 @@
+"use client";
+
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from "@/components/icons";
+import { useLocale } from "@/i18n/client";
+import { metaText } from "@/i18n/messages/meta";
+import { formatDecimal } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
  * Change between two rates, shown in percentage points with an arrow so the
  * direction never depends on color alone. `delta` is a fraction (0.012 = +1.2).
+ * A Client Component so it can read the language under Server Components
+ * (hero pages) and Client Components (tools) alike.
  */
 export function RateDelta({
   delta,
@@ -14,13 +21,15 @@ export function RateDelta({
   className?: string;
   digits?: number;
 }) {
+  const locale = useLocale();
+  const t = metaText[locale].rateDelta;
   if (delta === null || delta === undefined || Number.isNaN(delta)) {
     return (
       <span
         className={cn("text-xs text-muted-foreground", className)}
-        title="Not enough history yet"
+        title={t.notEnoughHistory}
       >
-        n/a
+        {t.notAvailable}
       </span>
     );
   }
@@ -34,10 +43,13 @@ export function RateDelta({
       : direction === "down"
         ? ArrowDownIcon
         : MinusIcon;
+  const shown = formatDecimal(Math.abs(rounded), digits, locale);
   const label =
     direction === "flat"
-      ? "No change"
-      : `${direction === "up" ? "Up" : "Down"} ${Math.abs(rounded).toFixed(digits)} points`;
+      ? t.noChange
+      : direction === "up"
+        ? t.up(shown)
+        : t.down(shown);
 
   return (
     <span
@@ -50,7 +62,7 @@ export function RateDelta({
       )}
     >
       <Icon className="size-3.5" weight="bold" aria-hidden />
-      <span aria-hidden>{Math.abs(rounded).toFixed(digits)}</span>
+      <span aria-hidden>{shown}</span>
       <span className="sr-only">{label}</span>
     </span>
   );

@@ -23,6 +23,10 @@ Not affiliated with or endorsed by Moonton.
 
 Every page is static and refreshes after each data update. Filters and tools run in the browser on JSON bundles under `/data/v1/`, and their state lives in the URL, so a link shows the same result to anyone. The bundles are rebuilt with each Vercel build, which the updater starts after every data update through a Deploy Hook.
 
+## Languages
+
+The app is in English and in casual Indonesian: every page above except the welcome page also exists under `/id` (`/id/tier-list`, `/id/heroes/fanny`), and the language switch in the sidebar (or the top bar on phones) keeps the current page and filters. Hero, skill, item and emblem names and texts from the sources stay as the sources give them. How it works, how to add a text, and the Indonesian style guide and glossary: [`docs/i18n.md`](docs/i18n.md).
+
 ## Local development
 
 Requirements: Node 22 and pnpm 10.
@@ -37,10 +41,11 @@ With `DATA_SOURCE=seed` the app reads the JSON files in `seed/` instead of Supab
 
 | Folder | Contents |
 |---|---|
-| `src/app/` | Pages, the JSON bundles under `data/v1/`, `api/revalidate`, sitemap, robots, manifest and Open Graph images. App pages sit in the `(app)` route group, whose layout adds the sidebar and footer; the welcome page (`page.tsx`, the home page) sits outside it |
+| `src/app/` | Pages under `[lang]/` (one copy per language), the JSON bundles under `data/v1/`, `api/revalidate`, sitemap, robots, manifest and Open Graph images. App pages sit in the `(app)` route group, whose layout adds the sidebar and footer; the welcome page (`page.tsx`, the home page) sits outside it |
 | `public/art/` | Hero art for the welcome page |
 | `src/components/` | UI by feature; shared tool pieces in `tools/`, shadcn primitives in `ui/` |
 | `src/config/` | Every weight, threshold and preset the scores use |
+| `src/i18n/` | Languages: routing helpers and the English and Indonesian texts of every feature (`messages/`) |
 | `src/lib/scoring/`, `src/lib/draft/` | Pure scoring and draft board logic, with unit tests |
 | `src/lib/data/` | Server-only data layer with a `seed` and a `supabase` provider |
 | `scripts/` | Source clients, seed builders and the updater (run with `tsx`) |

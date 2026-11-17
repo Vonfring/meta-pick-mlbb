@@ -5,12 +5,6 @@ import { splitCooldown, splitSummary } from "./text";
 /** Basic Common: every set can also take its talents. */
 export const SHARED_EMBLEM_SLUG = "basic-common";
 
-export const talentTierLabels: Record<number, string> = {
-  1: "Tier 1",
-  2: "Tier 2",
-  3: "Core",
-};
-
 export type TalentView = {
   id: number;
   name: string;

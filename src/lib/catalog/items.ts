@@ -2,12 +2,6 @@ import { compareNames, searchKey } from "@/lib/format";
 import type { ItemRow, LabeledValue, NamedText } from "@/types/data";
 import type { ItemCategory } from "@/types/domain";
 
-export const itemTierLabels: Record<number, string> = {
-  1: "Basic",
-  2: "Intermediate",
-  3: "Final",
-};
-
 /** What the item browser needs per item, with the build path resolved to names. */
 export type ItemView = {
   id: number;

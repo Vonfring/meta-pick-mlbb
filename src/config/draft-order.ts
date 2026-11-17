@@ -5,6 +5,9 @@
  * without seeing each other's bans, as in ranked; the board asks for your
  * team's bans first. In turn-based phases each letter is one step, in order:
  * "B" for blue, "R" for red.
+ *
+ * The name and description of each preset, in every language, are in
+ * src/i18n/messages/draft.ts, keyed by the preset id.
  */
 export type DraftTeam = "blue" | "red";
 export type DraftAction = "ban" | "pick";
@@ -14,8 +17,6 @@ export type DraftPhase =
   | { action: DraftAction; blind: false; order: string };
 
 export type DraftPreset = {
-  label: string;
-  description: string;
   phases: readonly DraftPhase[];
 };
 
@@ -24,9 +25,6 @@ const RANKED_PICKS = "BRRBBRRBBR";
 
 export const DRAFT_PRESETS = {
   mythic: {
-    label: "Ranked: Mythic and above",
-    description:
-      "5 bans a team in two blind waves (3, then 2), then picks in snake order.",
     phases: [
       { action: "ban", blind: true, perTeam: 3 },
       { action: "ban", blind: true, perTeam: 2 },
@@ -34,25 +32,18 @@ export const DRAFT_PRESETS = {
     ],
   },
   legend: {
-    label: "Ranked: Legend",
-    description: "4 blind bans a team, then picks in snake order.",
     phases: [
       { action: "ban", blind: true, perTeam: 4 },
       { action: "pick", blind: false, order: RANKED_PICKS },
     ],
   },
   epic: {
-    label: "Ranked: Epic",
-    description: "3 blind bans a team, then picks in snake order.",
     phases: [
       { action: "ban", blind: true, perTeam: 3 },
       { action: "pick", blind: false, order: RANKED_PICKS },
     ],
   },
   mpl: {
-    label: "Tournament (MPL)",
-    description:
-      "3 bans each in turn, 3 picks each, 2 more bans each, then the last 2 picks each.",
     phases: [
       { action: "ban", blind: false, order: "BRBRBR" },
       { action: "pick", blind: false, order: "BRRBBR" },

@@ -3,31 +3,35 @@ import { ItemBrowser } from "@/components/items/item-browser";
 import { EmptyState } from "@/components/meta/empty-state";
 import { PageHeader } from "@/components/meta/page-header";
 import { SwordIcon } from "@/components/icons";
+import { catalogText } from "@/i18n/messages/catalog";
+import { pageMetadata } from "@/i18n/metadata";
+import { getLocale } from "@/i18n/server";
 import { toItemViews } from "@/lib/catalog/items";
 import { getItems } from "@/lib/data";
 
-export const metadata: Metadata = {
-  title: "Items",
-  description:
-    "Every Mobile Legends item by shop category, with stats, passives, price and build path.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = catalogText[locale].items;
+  return pageMetadata(locale, "/items", {
+    title: t.title,
+    description: t.metaDescription,
+  });
+}
 
 export default async function ItemsPage() {
+  const t = catalogText[await getLocale()].items;
   const items = toItemViews(await getItems());
 
   return (
     <>
-      <PageHeader
-        title="Items"
-        description="Every item in the shop by category. Search for a name, a stat such as Crit Chance, or a word from a passive."
-      />
+      <PageHeader title={t.title} description={t.description} />
       {items.length > 0 ? (
         <ItemBrowser items={items} />
       ) : (
         <EmptyState
           icon={SwordIcon}
-          title="No items yet"
-          description="Item data appears here after the next catalog update."
+          title={t.emptyTitle}
+          description={t.emptyDescription}
         />
       )}
     </>

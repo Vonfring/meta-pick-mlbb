@@ -1,6 +1,7 @@
 import {
   COUNTER_SCORING,
   type CounterScoringConfig,
+  type CounterTagRuleId,
   type TagRule,
 } from "@/config/counter-scoring";
 import type { HeroTagValues } from "@/types/data";
@@ -18,8 +19,8 @@ export type NoteReason = {
 };
 
 export type TagReason = {
-  rule: string;
-  label: string;
+  /** The rule's text is in src/i18n/messages/counter.ts (counterText.tagRules). */
+  rule: CounterTagRuleId;
   /** The hero whose strength the rule describes. */
   by: Side;
   /** Points from the hero's point of view: negative when the opponent's strength. */
@@ -91,14 +92,12 @@ export function pairEdge(
       if (forward >= config.minReasonPoints)
         tagReasons.push({
           rule: rule.id,
-          label: rule.label,
           by: "hero",
           points: forward,
         });
       if (backward >= config.minReasonPoints)
         tagReasons.push({
           rule: rule.id,
-          label: rule.label,
           by: "opponent",
           points: -backward,
         });

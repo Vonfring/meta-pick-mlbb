@@ -1,9 +1,12 @@
 import { ImageResponse } from "next/og";
-import { LOCALES } from "@/i18n/config";
+import { DEFAULT_LOCALE, isLocale, LOCALES } from "@/i18n/config";
+import { homeText } from "@/i18n/messages/home";
 import { OG_SIZE, OgFrame, ogColors, ogFonts } from "@/lib/og";
 
-export const alt =
-  "Metapick MLBB: tier list, counter picks, matchups and a draft simulator for Mobile Legends";
+// A static export, so it cannot follow the [lang] param: per-language alt
+// text would need generateImageMetadata, which moves the image to
+// /opengraph-image/<id> and brings its own generateStaticParams.
+export const alt = homeText.en.og.alt;
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
@@ -13,7 +16,13 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
-export default async function Image() {
+export default async function Image({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  const t = homeText[isLocale(lang) ? lang : DEFAULT_LOCALE].og;
   return new ImageResponse(
     <OgFrame>
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -25,7 +34,7 @@ export default async function Image() {
             maxWidth: 900,
           }}
         >
-          Know the counter before you play.
+          {t.headline}
         </span>
         <span
           style={{
@@ -36,8 +45,7 @@ export default async function Image() {
             lineHeight: 1.3,
           }}
         >
-          Tier list, counter picks, matchups and a ranked draft simulator for
-          Mobile Legends, with the numbers behind every suggestion.
+          {t.subline}
         </span>
       </div>
     </OgFrame>,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { catalogText } from "@/i18n/messages/catalog";
 import type { EmblemRow, EmblemTalentRow, ItemRow } from "@/types/data";
 import { setForRole, toTalentViews } from "./emblems";
 import { compareItems, inCategory, toItemViews } from "./items";
@@ -195,5 +196,31 @@ describe("emblems", () => {
   it("finds the set made for a role", () => {
     expect(setForRole(sets, "mage")?.name).toBe("Mage");
     expect(setForRole(sets, "marksman")).toBeUndefined();
+  });
+});
+
+describe("catalog texts", () => {
+  const { en, id } = catalogText;
+
+  it("counts the items shown in both languages", () => {
+    expect(en.items.summary(12, 120, true)).toBe(
+      "12 of 120 items. Final items first, then by price.",
+    );
+    expect(id.items.summary(120, 120, false)).toBe(
+      "120 item. Item jadi paling atas, terus diurut dari yang paling mahal.",
+    );
+  });
+
+  it("names the recommended set in Indonesian word order", () => {
+    expect(id.emblems.recommendedSet("Assassin", "Assassin")).toBe(
+      "Set Assassin dibikin buat hero Assassin. Di tiap tier kamu ambil satu talent, dari set Assassin atau dari talent yang bisa dipake semua set.",
+    );
+    expect(id.emblems.setName("Mage")).toBe("Set Mage");
+    expect(en.emblems.setName("Mage")).toBe("Mage set");
+  });
+
+  it("writes cooldowns with a decimal comma in Indonesian", () => {
+    expect(en.cooldown("75")).toBe("Cooldown 75s");
+    expect(id.cooldown("1.5")).toBe("Cooldown 1,5 detik");
   });
 });

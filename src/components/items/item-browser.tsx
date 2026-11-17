@@ -6,18 +6,20 @@ import { EmptyState } from "@/components/meta/empty-state";
 import { Button } from "@/components/ui/button";
 import { ChipGroup, type ChipOption } from "@/components/ui/chip-group";
 import { Input } from "@/components/ui/input";
+import { useLocale } from "@/i18n/client";
+import { catalogText } from "@/i18n/messages/catalog";
+import { common } from "@/i18n/messages/common";
 import { inCategory, type ItemView } from "@/lib/catalog/items";
 import { searchKey } from "@/lib/format";
 import { oneOf, useUrlParams } from "@/lib/use-url-params";
-import {
-  ITEM_CATEGORIES,
-  type ItemCategory,
-  itemCategoryLabels,
-} from "@/types/domain";
+import { ITEM_CATEGORIES, type ItemCategory } from "@/types/domain";
 import { ItemCard } from "./item-card";
 
 /** The shop by category, with search over names, stats and passives, kept in the URL. */
 export function ItemBrowser({ items }: { items: ItemView[] }) {
+  const locale = useLocale();
+  const t = catalogText[locale].items;
+  const categoryLabels = common[locale].itemCategories;
   const [params, setParams] = useUrlParams();
   const query = params.get("q") ?? "";
   const category = oneOf<ItemCategory>(params.get("category"), ITEM_CATEGORIES);
@@ -28,10 +30,10 @@ export function ItemBrowser({ items }: { items: ItemView[] }) {
   }, [items, query]);
 
   const options: ChipOption<ItemCategory | "all">[] = [
-    { value: "all", label: "All", count: matches.length },
+    { value: "all", label: t.all, count: matches.length },
     ...ITEM_CATEGORIES.map((c) => ({
       value: c,
-      label: itemCategoryLabels[c],
+      label: categoryLabels[c],
       count: matches.filter((item) => inCategory(item, c)).length,
     })),
   ];
@@ -55,7 +57,7 @@ export function ItemBrowser({ items }: { items: ItemView[] }) {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         <label className="relative block sm:max-w-sm">
-          <span className="sr-only">Search items</span>
+          <span className="sr-only">{t.search}</span>
           <MagnifyingGlassIcon
             className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden
@@ -63,7 +65,7 @@ export function ItemBrowser({ items }: { items: ItemView[] }) {
           <Input
             type="search"
             value={query}
-            placeholder="Search by name, stat or passive"
+            placeholder={t.searchPlaceholder}
             autoComplete="off"
             spellCheck={false}
             className="pl-9"
@@ -71,7 +73,7 @@ export function ItemBrowser({ items }: { items: ItemView[] }) {
           />
         </label>
         <ChipGroup
-          label="Category"
+          label={t.category}
           options={options}
           value={category}
           onChange={(value) =>
@@ -81,10 +83,7 @@ export function ItemBrowser({ items }: { items: ItemView[] }) {
       </div>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">
-        {filtered
-          ? `${shownCount} of ${items.length} items`
-          : `${items.length} items`}
-        . Final items first, then by price.
+        {t.summary(shownCount, items.length, filtered)}
       </p>
 
       {sections.length > 0 ? (
@@ -98,7 +97,7 @@ export function ItemBrowser({ items }: { items: ItemView[] }) {
               id={`items-${section.category}`}
               className="font-display text-lg font-semibold"
             >
-              {itemCategoryLabels[section.category]}
+              {categoryLabels[section.category]}
               <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
                 {section.items.length}
               </span>
@@ -115,15 +114,15 @@ export function ItemBrowser({ items }: { items: ItemView[] }) {
       ) : (
         <EmptyState
           icon={SwordIcon}
-          title="No item matches this search"
-          description="Try an item name, a stat such as Crit Chance, or a word from a passive."
+          title={t.noMatchTitle}
+          description={t.noMatchDescription}
           action={
             <Button
               variant="outline"
               size="sm"
               onClick={() => setParams({ q: null, category: null })}
             >
-              Clear search
+              {t.clearSearch}
             </Button>
           }
         />

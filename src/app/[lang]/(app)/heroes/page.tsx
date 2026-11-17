@@ -2,31 +2,43 @@ import type { Metadata } from "next";
 import { HeroBrowser } from "@/components/hero/hero-browser";
 import { PageHeader } from "@/components/meta/page-header";
 import { DEFAULT_BRACKET, DEFAULT_PERIOD } from "@/config/filters";
+import { common } from "@/i18n/messages/common";
+import { heroesText } from "@/i18n/messages/heroes";
+import { pageMetadata } from "@/i18n/metadata";
+import { getLocale } from "@/i18n/server";
 import { getRankedHeroes } from "@/lib/data";
 import { formatDate } from "@/lib/format";
-import { bracketLabels, periodLabels } from "@/types/domain";
 
-export const metadata: Metadata = {
-  title: "Heroes",
-  description:
-    "Every Mobile Legends hero with role, lane, tier and win rate, plus skills, counters and best teammates on each hero's page.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = heroesText[locale].list;
+  return pageMetadata(locale, "/heroes", {
+    title: t.title,
+    description: t.metaDescription,
+  });
+}
 
 export default async function HeroesPage() {
+  const locale = await getLocale();
+  const t = heroesText[locale];
+  const c = common[locale];
   const { heroes, snapshot } = await getRankedHeroes(
     DEFAULT_BRACKET,
     DEFAULT_PERIOD,
   );
   const context = snapshot
-    ? `${bracketLabels[snapshot.rank_bracket]}, ${periodLabels[snapshot.period_days].toLowerCase()}, updated ${formatDate(snapshot.fetched_at)}`
-    : "no statistics yet";
+    ? t.snapshotUpdated(
+        t.snapshot(
+          c.brackets[snapshot.rank_bracket],
+          c.periods[snapshot.period_days],
+        ),
+        formatDate(snapshot.fetched_at, locale),
+      )
+    : t.list.noStats;
 
   return (
     <>
-      <PageHeader
-        title="Heroes"
-        description="Find a hero by name, role or lane. Open one for skills, counters and best teammates."
-      />
+      <PageHeader title={t.list.title} description={t.list.description} />
       <HeroBrowser heroes={heroes} context={context} />
     </>
   );

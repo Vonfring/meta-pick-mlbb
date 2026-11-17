@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og";
 import { DEFAULT_BRACKET, DEFAULT_PERIOD } from "@/config/filters";
-import { LOCALES } from "@/i18n/config";
+import { DEFAULT_LOCALE, isLocale, LOCALES } from "@/i18n/config";
+import { common } from "@/i18n/messages/common";
+import { heroesText } from "@/i18n/messages/heroes";
 import { getHeroSlugParams, getRankedHeroes } from "@/lib/data";
 import { formatPercent, initials } from "@/lib/format";
 import { roleLine } from "@/lib/heroes/roles";
@@ -12,8 +14,9 @@ import {
   ogFonts,
   ogTierColors,
 } from "@/lib/og";
-import { bracketLabels } from "@/types/domain";
 
+// The alt text cannot follow the language: a file-based image has one static
+// alt, and generateImageMetadata would clash with generateStaticParams below.
 export const alt = "Hero card with role, lane, tier and win rate";
 export const size = OG_SIZE;
 export const contentType = "image/png";
@@ -28,9 +31,11 @@ export async function generateStaticParams() {
 export default async function Image({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ lang: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { lang, slug } = await params;
+  const locale = isLocale(lang) ? lang : DEFAULT_LOCALE;
+  const t = heroesText[locale].og;
   const { heroes } = await getRankedHeroes(DEFAULT_BRACKET, DEFAULT_PERIOD);
   const hero = heroes.find((h) => h.slug === slug);
   // The hero page answers 404 for an unknown slug; so does its image.
@@ -73,7 +78,7 @@ export default async function Image({
           <span
             style={{ fontSize: 34, fontWeight: 600, color: ogColors.muted }}
           >
-            {roleLine(hero)}
+            {roleLine(hero, locale)}
           </span>
           <div
             style={{
@@ -93,11 +98,14 @@ export default async function Image({
                   padding: "4px 16px",
                 }}
               >
-                {`Tier ${hero.tier}`}
+                {t.tier(hero.tier)}
               </span>
             ) : null}
             <span style={{ fontSize: 34, fontWeight: 600 }}>
-              {`Win rate ${formatPercent(hero.winRate)} in ${bracketLabels[DEFAULT_BRACKET]}`}
+              {t.winRate(
+                formatPercent(hero.winRate, 1, locale),
+                common[locale].brackets[DEFAULT_BRACKET],
+              )}
             </span>
           </div>
         </div>

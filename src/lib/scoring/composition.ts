@@ -11,6 +11,10 @@ export type CheckStatus = "ok" | "weak" | "missing";
 
 export type CheckResult = {
   id: string;
+  /**
+   * English label and hint from the config. On screen, show
+   * compositionRuleText(locale, check) from src/i18n/messages/composition.ts.
+   */
   label: string;
   hint: string;
   status: CheckStatus;

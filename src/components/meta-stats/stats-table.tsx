@@ -11,6 +11,8 @@ import { HeroAvatar } from "@/components/meta/hero-avatar";
 import { RateDelta } from "@/components/meta/rate-delta";
 import { TierBadge } from "@/components/meta/tier-badge";
 import { Input } from "@/components/ui/input";
+import { useLocale } from "@/i18n/client";
+import { metaText, type StatsSortKey } from "@/i18n/messages/meta";
 import type { HeroSummary, MetaSnapshot } from "@/lib/data";
 import { compareNames, formatPercent, searchKey } from "@/lib/format";
 import type { MetaRow, Rates } from "@/lib/meta/meta-rows";
@@ -20,12 +22,12 @@ import { SnapshotNote } from "./snapshot-note";
 import { useMetaSnapshot } from "./use-meta-snapshot";
 
 const SORTS = {
-  name: { label: "Hero", short: "Hero", firstDir: "asc" },
-  tier: { label: "Tier", short: "Tier", firstDir: "desc" },
-  win: { label: "Win rate", short: "Win", firstDir: "desc" },
-  pick: { label: "Pick rate", short: "Pick", firstDir: "desc" },
-  ban: { label: "Ban rate", short: "Ban", firstDir: "desc" },
-} as const;
+  name: { firstDir: "asc" },
+  tier: { firstDir: "desc" },
+  win: { firstDir: "desc" },
+  pick: { firstDir: "desc" },
+  ban: { firstDir: "desc" },
+} as const satisfies Record<StatsSortKey, { firstDir: "asc" | "desc" }>;
 type SortKey = keyof typeof SORTS;
 type Dir = "asc" | "desc";
 
@@ -62,9 +64,10 @@ function RateCell({
   previous: number | null;
   digits: number;
 }) {
+  const locale = useLocale();
   return (
     <td className="px-2 py-2 text-right align-middle tabular-nums sm:px-3">
-      <span className="block">{formatPercent(rate, digits)}</span>
+      <span className="block">{formatPercent(rate, digits, locale)}</span>
       {previous !== null ? (
         <RateDelta
           delta={rate - previous}
@@ -87,6 +90,8 @@ export function StatisticsView({
   heroes: HeroSummary[];
   initial: MetaSnapshot;
 }) {
+  const locale = useLocale();
+  const t = metaText[locale].statsTable;
   const { state, params, setParams } = useMetaFilters();
   const { data, loading, error } = useMetaSnapshot(
     initial,
@@ -146,8 +151,8 @@ export function StatisticsView({
             active && "text-foreground",
           )}
         >
-          <span className="sm:hidden">{SORTS[key].short}</span>
-          <span className="hidden sm:inline">{SORTS[key].label}</span>
+          <span className="sm:hidden">{t.sorts[key].short}</span>
+          <span className="hidden sm:inline">{t.sorts[key].label}</span>
           {active ? (
             <Icon className="size-3" weight="bold" aria-hidden />
           ) : null}
@@ -160,7 +165,7 @@ export function StatisticsView({
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         <label className="relative block sm:max-w-sm">
-          <span className="sr-only">Search heroes</span>
+          <span className="sr-only">{t.search}</span>
           <MagnifyingGlassIcon
             className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden
@@ -168,7 +173,7 @@ export function StatisticsView({
           <Input
             type="search"
             value={query}
-            placeholder="Search heroes"
+            placeholder={t.search}
             autoComplete="off"
             spellCheck={false}
             className="pl-9"
@@ -188,9 +193,7 @@ export function StatisticsView({
           )}
         >
           <table className="w-full text-sm">
-            <caption className="sr-only">
-              Hero statistics. Select a column header to sort.
-            </caption>
+            <caption className="sr-only">{t.caption}</caption>
             <thead className="bg-surface-2 text-xs text-muted-foreground">
               <tr>
                 <th
@@ -241,7 +244,7 @@ export function StatisticsView({
                       <TierBadge tier={row.tier} size="sm" />
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        Rarely picked
+                        {t.rarelyPicked}
                       </span>
                     )}
                   </td>
@@ -267,7 +270,7 @@ export function StatisticsView({
         </div>
       ) : (
         <p className="rounded-lg border border-dashed bg-surface/60 p-6 text-sm text-muted-foreground">
-          No hero matches these filters.
+          {metaText[locale].filters.noMatch}
         </p>
       )}
     </div>

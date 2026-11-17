@@ -1,48 +1,42 @@
 import { COUNTER_SCORING } from "@/config/counter-scoring";
-
-const points = (n: number) => `${n} ${n === 1 ? "point" : "points"}`;
+import { counterText } from "@/i18n/messages/counter";
+import { getLocale } from "@/i18n/server";
+import { formatDecimal } from "@/lib/format";
 
 /** How counters are scored, written from src/config/counter-scoring.ts so it never drifts. */
-export function CounterMethod() {
+export async function CounterMethod() {
+  const locale = await getLocale();
+  const t = counterText[locale];
+  const m = t.method;
   const { statsWeight, relationPoints, tagRules, metaWeight } = COUNTER_SCORING;
+  // Config values as written ("0.3", "1.5"), with the language's decimal mark.
+  const points = (value: number) =>
+    m.points(
+      formatDecimal(
+        value,
+        Math.min(2, (String(value).split(".")[1] ?? "").length),
+        locale,
+      ),
+    );
   return (
     <details className="group rounded-lg border bg-surface">
       <summary className="cursor-pointer list-none px-4 py-3 font-medium marker:hidden">
-        How the score works
+        {m.title}
       </summary>
       <div className="flex max-w-[68ch] flex-col gap-3 border-t px-4 py-4 text-sm text-muted-foreground">
-        <p>
-          The score adds up how a hero does against each enemy, plus a little
-          for current form. One point is about one percentage point of win rate.
-        </p>
+        <p>{m.intro}</p>
         <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>{m.statistics(points(statsWeight))}</li>
+          <li>{m.notes(points(relationPoints))}</li>
           <li>
-            Statistics: {points(statsWeight)} per percentage point the win rate
-            changes when the two heroes meet. The official data lists each
-            hero&apos;s five best and five worst matchups, so many pairs have no
-            number.
+            {m.tags(
+              tagRules.map((r) => t.tagRules[r.id]).join("; "),
+              points(Math.max(...tagRules.map((r) => r.points))),
+            )}
           </li>
-          <li>
-            Official notes: {points(relationPoints)} when a hero&apos;s page
-            says it is strong against the enemy, or the enemy&apos;s page says
-            it is weak against the hero. The opposite notes take the same away.
-          </li>
-          <li>
-            Hero tags: {tagRules.map((r) => r.label.toLowerCase()).join("; ")}.
-            Each is worth up to{" "}
-            {points(Math.max(...tagRules.map((r) => r.points)))} when both
-            heroes are at the top of the scale, and counts against the hero when
-            the enemy has the edge.
-          </li>
-          <li>
-            Meta: {points(metaWeight)} per percentage point of adjusted win rate
-            above 50%, the same win rate the tier list uses.
-          </li>
+          <li>{m.meta(points(metaWeight))}</li>
         </ul>
-        <p>
-          Heroes with no statistics or official note against any of the enemies
-          are marked &ldquo;Tags and meta only&rdquo;.
-        </p>
+        <p>{m.limited(t.view.tagsAndMetaOnly)}</p>
       </div>
     </details>
   );

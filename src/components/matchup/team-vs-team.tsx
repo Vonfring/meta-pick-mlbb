@@ -15,8 +15,13 @@ import { HeroSlots, type TeamSide } from "@/components/tools/hero-slots";
 import { VerdictBanner } from "@/components/tools/verdict-banner";
 import { Button } from "@/components/ui/button";
 import { MATCHUP_SCORING } from "@/config/matchup-scoring";
+import { useLocale } from "@/i18n/client";
+import type { Locale } from "@/i18n/config";
+import { common } from "@/i18n/messages/common";
+import { matchupText } from "@/i18n/messages/matchup";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroSummary } from "@/lib/data";
-import { formatPoints } from "@/lib/format";
+import { formatDecimal, formatPoints } from "@/lib/format";
 import { heroListParam, parseHeroList } from "@/lib/hero-list-param";
 import { TEAM_SIZE } from "@/lib/scoring/composition";
 import { edgeLines } from "@/lib/scoring/explain";
@@ -26,7 +31,6 @@ import {
   type TeamMatchup,
 } from "@/lib/scoring/matchup";
 import { cn } from "@/lib/utils";
-import { bracketLabels } from "@/types/domain";
 import type { MatchupTools } from "./matchup-view";
 
 type Team = "blue" | "red";
@@ -34,6 +38,9 @@ const KEY_PAIRS = 6;
 
 /** Five against five: ?mode=team&blue=…&red=…, hero slugs joined by commas. */
 export function TeamVsTeam({ tools }: { tools: MatchupTools }) {
+  const locale = useLocale();
+  const m = matchupText[locale];
+  const t = m.team;
   const { bySlug, params, setParams, index, popular } = tools;
   const blue = parseHeroList(params.get("blue"), bySlug, TEAM_SIZE);
   // A hero can only be picked once per game.
@@ -77,22 +84,22 @@ export function TeamVsTeam({ tools }: { tools: MatchupTools }) {
       >
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="teams-heading" className="font-display text-lg font-semibold">
-            Teams
+            {t.heading}
           </h2>
           {blue.length > 0 || red.length > 0 ? (
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" onClick={() => set(red, blue)}>
                 <ArrowsLeftRightIcon aria-hidden />
-                Swap
+                {m.swap}
               </Button>
               <Button variant="ghost" size="sm" onClick={() => set([], [])}>
-                Clear
+                {m.clear}
               </Button>
             </div>
           ) : null}
         </div>
         <TeamPanel
-          name="Blue team"
+          name={t.names.blue}
           side="ally"
           heroes={blue}
           active={!bothFull && target === "blue"}
@@ -105,7 +112,7 @@ export function TeamVsTeam({ tools }: { tools: MatchupTools }) {
           }
         />
         <TeamPanel
-          name="Red team"
+          name={t.names.red}
           side="enemy"
           heroes={red}
           active={!bothFull && target === "red"}
@@ -122,23 +129,24 @@ export function TeamVsTeam({ tools }: { tools: MatchupTools }) {
           heroes={popular}
           taken={new Set([...blue, ...red].map((h) => h.id))}
           onPick={add}
-          placeholder={`Add to the ${target} team`}
-          caption={`Adding to the ${target} team. Most picked in ${bracketLabels[tools.bracket]} first.`}
-          actionLabel={(name) => `Add ${name} to the ${target} team`}
-          blocked={
-            bothFull ? "Both teams are full. Tap a hero to remove it." : null
-          }
+          placeholder={t.addTo(target)}
+          caption={t.pickerCaption(
+            target,
+            common[locale].brackets[tools.bracket],
+          )}
+          actionLabel={(name) => t.addHero(name, target)}
+          blocked={bothFull ? t.bothFull : null}
         />
       </section>
 
-      <section aria-label="Result" className="flex min-w-0 flex-col gap-6">
+      <section aria-label={m.result} className="flex min-w-0 flex-col gap-6">
         {result ? (
           <TeamResult result={result} blue={blue} red={red} tools={tools} />
         ) : (
           <EmptyState
             icon={UsersFourIcon}
-            title="Add heroes to both teams"
-            description="Pick up to five heroes a side. The comparison adds up current form, counters between the teams, synergy within each team and, once both teams are full, their composition."
+            title={t.emptyTitle}
+            description={t.emptyDescription}
           />
         )}
       </section>
@@ -161,6 +169,7 @@ function TeamPanel({
   onChoose: () => void;
   onRemove: (hero: HeroSummary) => void;
 }) {
+  const t = matchupText[useLocale()].team;
   return (
     <div
       className={cn(
@@ -183,7 +192,7 @@ function TeamPanel({
           {name}
         </span>
         <span className="text-xs text-muted-foreground">
-          {active ? "Adding here" : `${heroes.length} of ${TEAM_SIZE}`}
+          {active ? t.addingHere : t.count(heroes.length, TEAM_SIZE)}
         </span>
       </button>
       <HeroSlots
@@ -229,9 +238,11 @@ function TeamFaces({
 
 /** Which team a number of points favors, in that team's text color. */
 function SideEdge({ points }: { points: number }) {
+  const locale = useLocale();
+  const t = matchupText[locale].team;
   const rounded = Number(points.toFixed(1));
   if (rounded === 0)
-    return <span className="text-sm text-muted-foreground">Even</span>;
+    return <span className="text-sm text-muted-foreground">{t.even}</span>;
   const blue = rounded > 0;
   return (
     <span
@@ -240,7 +251,10 @@ function SideEdge({ points }: { points: number }) {
         blue ? "text-ally-text" : "text-enemy-text",
       )}
     >
-      {blue ? "Blue" : "Red"} {Math.abs(rounded).toFixed(1)}
+      {t.sideEdge(
+        blue ? "blue" : "red",
+        formatDecimal(Math.abs(rounded), 1, locale),
+      )}
     </span>
   );
 }
@@ -254,6 +268,7 @@ function SynergyList({
   nameOf: (id: number) => string;
   empty: string;
 }) {
+  const t = matchupText[useLocale()].team;
   if (pairs.length === 0)
     return <p className="text-sm text-muted-foreground">{empty}</p>;
   return (
@@ -264,9 +279,7 @@ function SynergyList({
           className="grid grid-cols-[3.25rem_1fr] items-baseline gap-2 text-sm"
         >
           <Points value={p.delta * 100} className="justify-end" />
-          <span>
-            {nameOf(p.heroId)} with {nameOf(p.teammateId)}
-          </span>
+          <span>{t.pairWith(nameOf(p.heroId), nameOf(p.teammateId))}</span>
         </li>
       ))}
     </ul>
@@ -274,6 +287,14 @@ function SynergyList({
 }
 
 const share = (score: number) => `${Math.round(score * 100)}%`;
+
+/** A config value as written ("0.5"), with the language's decimal mark. */
+const configNumber = (value: number, locale: Locale) =>
+  formatDecimal(
+    value,
+    Math.min(2, (String(value).split(".")[1] ?? "").length),
+    locale,
+  );
 
 function TeamResult({
   result,
@@ -286,6 +307,9 @@ function TeamResult({
   red: HeroSummary[];
   tools: MatchupTools;
 }) {
+  const locale = useLocale();
+  const m = matchupText[locale];
+  const t = m.team;
   const { nameOf } = tools;
   const { meta, counters, synergy, composition, verdict } = result;
   const withData = counters.pairs.filter((p) => p.hasData).length;
@@ -294,27 +318,33 @@ function TeamResult({
     .slice(0, KEY_PAIRS);
   const categories = [
     {
-      label: "Current form",
+      label: toolsText[locale].suggestion.currentForm,
       points: meta.points,
-      detail: `Compared with 50%, adjusted win rates add up to ${formatPoints(meta.blue)} points for blue and ${formatPoints(meta.red)} for red.`,
+      detail: t.formDetail(
+        formatPoints(meta.blue, 1, locale),
+        formatPoints(meta.red, 1, locale),
+      ),
     },
     {
-      label: "Counters",
+      label: t.counters,
       points: counters.points,
-      detail: `${withData} of ${counters.pairs.length} hero pairs have statistics or an official note; the rest use hero tags.`,
+      detail: t.countersDetail(withData, counters.pairs.length),
     },
     {
-      label: "Synergy",
+      label: t.synergy,
       points: synergy.points,
-      detail: `${synergy.blue.length} blue and ${synergy.red.length} red teammate pairs have numbers.`,
+      detail: t.synergyDetail(synergy.blue.length, synergy.red.length),
     },
     {
-      label: "Composition",
+      label: t.composition,
       points: composition.points,
       detail:
         composition.points === null
-          ? "Counts once both teams have five heroes."
-          : `Blue passes ${share(composition.blue.score)} of the checks, red ${share(composition.red.score)}.`,
+          ? t.compositionPending
+          : t.compositionDetail(
+              share(composition.blue.score),
+              share(composition.red.score),
+            ),
     },
   ];
 
@@ -322,10 +352,10 @@ function TeamResult({
     <>
       <VerdictBanner
         verdict={verdict}
-        firstName="Blue team"
-        secondName="Red team"
-        first={<TeamFaces label="Blue team" heroes={blue} align="start" />}
-        second={<TeamFaces label="Red team" heroes={red} align="end" />}
+        firstName={t.names.blue}
+        secondName={t.names.red}
+        first={<TeamFaces label={t.names.blue} heroes={blue} align="start" />}
+        second={<TeamFaces label={t.names.red} heroes={red} align="end" />}
       />
 
       <section
@@ -336,7 +366,7 @@ function TeamResult({
           id="team-breakdown-heading"
           className="font-display text-lg font-semibold"
         >
-          Breakdown
+          {m.breakdown}
         </h3>
         <dl className="divide-y rounded-lg border bg-surface">
           {categories.map((c) => (
@@ -346,7 +376,7 @@ function TeamResult({
                 <dd>
                   {c.points === null ? (
                     <span className="text-sm text-muted-foreground">
-                      Not counted
+                      {t.notCounted}
                     </span>
                   ) : (
                     <SideEdge points={c.points} />
@@ -357,7 +387,7 @@ function TeamResult({
             </div>
           ))}
           <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <dt className="font-semibold">Total</dt>
+            <dt className="font-semibold">{m.total}</dt>
             <dd>
               <SideEdge points={verdict.total} />
             </dd>
@@ -374,17 +404,16 @@ function TeamResult({
             id="key-pairs-heading"
             className="font-display text-lg font-semibold"
           >
-            Key matchups
+            {t.keyMatchups}
           </h3>
           <p className="text-sm text-muted-foreground">
-            The pairs that move the counters score most, before it is weighted
-            by {MATCHUP_SCORING.countersWeight}.
+            {t.keyMatchupsHint(
+              configNumber(MATCHUP_SCORING.countersWeight, locale),
+            )}
           </p>
         </div>
         {keyPairs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No pair has a clear edge either way.
-          </p>
+          <p className="text-sm text-muted-foreground">{t.noKeyPairs}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {keyPairs.map((pair) => (
@@ -402,7 +431,7 @@ function TeamResult({
                       <span className="font-medium text-ally-text">
                         {nameOf(pair.heroId)}
                       </span>
-                      {" against "}
+                      {` ${t.against} `}
                       <span className="font-medium text-enemy-text">
                         {nameOf(pair.opponentId)}
                       </span>
@@ -411,8 +440,8 @@ function TeamResult({
                   </summary>
                   <div className="px-3 pb-3 sm:pl-9">
                     <ReasonList
-                      lines={edgeLines(pair, nameOf)}
-                      empty="Only small tag effects."
+                      lines={edgeLines(pair, nameOf, locale)}
+                      empty={t.onlySmallTags}
                     />
                   </div>
                 </details>
@@ -431,28 +460,29 @@ function TeamResult({
             id="synergy-heading"
             className="font-display text-lg font-semibold"
           >
-            Synergy
+            {t.synergy}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            How much a hero&apos;s win rate changes with the teammate, from the
-            official data. Only the strongest pairs are listed there.
-          </p>
+          <p className="text-sm text-muted-foreground">{t.synergyHint}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-medium text-ally-text">Blue team</h4>
+            <h4 className="text-sm font-medium text-ally-text">
+              {t.names.blue}
+            </h4>
             <SynergyList
               pairs={synergy.blue}
               nameOf={nameOf}
-              empty="No teammate pairs with numbers."
+              empty={t.noSynergy}
             />
           </div>
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-medium text-enemy-text">Red team</h4>
+            <h4 className="text-sm font-medium text-enemy-text">
+              {t.names.red}
+            </h4>
             <SynergyList
               pairs={synergy.red}
               nameOf={nameOf}
-              empty="No teammate pairs with numbers."
+              empty={t.noSynergy}
             />
           </div>
         </div>
@@ -466,12 +496,12 @@ function TeamResult({
           id="composition-heading"
           className="font-display text-lg font-semibold"
         >
-          Composition
+          {t.composition}
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 rounded-lg border bg-surface p-4">
             <h4 className="text-sm font-medium text-ally-text">
-              Blue team
+              {t.names.blue}
               {composition.blue.complete
                 ? `: ${share(composition.blue.score)}`
                 : ""}
@@ -480,7 +510,7 @@ function TeamResult({
           </div>
           <div className="flex flex-col gap-2 rounded-lg border bg-surface p-4">
             <h4 className="text-sm font-medium text-enemy-text">
-              Red team
+              {t.names.red}
               {composition.red.complete
                 ? `: ${share(composition.red.score)}`
                 : ""}

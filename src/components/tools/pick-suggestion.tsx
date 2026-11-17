@@ -1,27 +1,31 @@
+"use client";
+
 import Link from "@/components/locale-link";
 import type * as React from "react";
 import { CaretDownIcon, CheckCircleIcon } from "@/components/icons";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
 import { TierBadge } from "@/components/meta/tier-badge";
 import { Points, ReasonList } from "@/components/tools/edge-reasons";
+import { useLocale } from "@/i18n/client";
+import {
+  compositionRuleText,
+  compositionText,
+} from "@/i18n/messages/composition";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroSummary } from "@/lib/data";
 import { formatPercent, formatPoints } from "@/lib/format";
-import type { CheckStatus } from "@/lib/scoring/composition";
 import type { CheckChange, PickSuggestion } from "@/lib/scoring/draft";
 import { edgeLines } from "@/lib/scoring/explain";
 import type { HeroIndex } from "@/lib/scoring/hero-index";
 
-const statusWord: Record<CheckStatus, string> = {
-  ok: "OK",
-  weak: "weak",
-  missing: "missing",
-};
-
 /** "Frontline OK", one chip per check a hero improves. */
 export function FixList({ fixes }: { fixes: CheckChange[] }) {
+  const locale = useLocale();
+  const t = toolsText[locale].suggestion;
+  const { statusWord } = compositionText[locale];
   if (fixes.length === 0) return null;
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="Checks it improves">
+    <ul className="flex flex-wrap gap-1.5" aria-label={t.fixesLabel}>
       {fixes.map((fix) => (
         <li
           key={fix.id}
@@ -32,7 +36,10 @@ export function FixList({ fixes }: { fixes: CheckChange[] }) {
             weight="fill"
             aria-hidden
           />
-          {fix.label} {statusWord[fix.to]}
+          {t.fixChip(
+            compositionRuleText(locale, fix).label,
+            statusWord[fix.to],
+          )}
         </li>
       ))}
     </ul>
@@ -54,11 +61,14 @@ export function PickSuggestionRow({
   hero: HeroSummary;
   index: HeroIndex;
   nameOf: (heroId: number) => string;
-  /** "Mythic", for the form line. */
+  /** "Mythic", for the form line, in the page language. */
   rankLabel: string;
   /** A button such as "Add" or "Pick". */
   action?: React.ReactNode;
 }) {
+  const locale = useLocale();
+  const t = toolsText[locale].suggestion;
+  const c = compositionText[locale];
   const meta = index.meta.get(hero.id);
   const { parts } = suggestion;
   return (
@@ -83,15 +93,17 @@ export function PickSuggestionRow({
           </Link>
           {meta?.tier ? <TierBadge tier={meta.tier} size="sm" /> : null}
           {!suggestion.laneFit ? (
-            <span className="text-xs text-muted-foreground">No open lane</span>
+            <span className="text-xs text-muted-foreground">
+              {t.noOpenLane}
+            </span>
           ) : null}
         </span>
         <span className="flex items-center gap-3">
           <span className="flex flex-col items-end">
             <span className="font-display text-lg font-bold tabular-nums">
-              {formatPoints(suggestion.score)}
+              {formatPoints(suggestion.score, 1, locale)}
             </span>
-            <span className="text-xs text-muted-foreground">score</span>
+            <span className="text-xs text-muted-foreground">{t.score}</span>
           </span>
           {action}
         </span>
@@ -107,62 +119,69 @@ export function PickSuggestionRow({
             className="size-4 transition-transform group-open:rotate-180"
             aria-hidden
           />
-          Why {hero.name}
+          {t.why(hero.name)}
         </summary>
         <div className="flex flex-col gap-4 px-3 pb-4 sm:pl-11">
-          <Part label="Composition" points={parts.composition}>
+          <Part label={t.composition} points={parts.composition}>
             <p className="text-sm text-muted-foreground">
               {suggestion.fixes.length > 0
-                ? `Improves ${suggestion.fixes
-                    .map(
-                      (f) =>
-                        `${f.label.toLowerCase()} from ${statusWord[f.from]} to ${statusWord[f.to]}`,
-                    )
-                    .join(", ")}.`
+                ? t.improves(
+                    suggestion.fixes.map((f) =>
+                      t.change(
+                        c.ruleInSentence(compositionRuleText(locale, f).label),
+                        c.statusWord[f.from],
+                        c.statusWord[f.to],
+                      ),
+                    ),
+                  )
                 : parts.composition < 0
-                  ? "Makes the checklist worse, usually by doubling up a lane."
-                  : "Adds to the team's tag totals without changing a check."}
+                  ? t.worse
+                  : t.neutral}
             </p>
           </Part>
           {suggestion.edges.length > 0 ? (
-            <Part label="Counters" points={parts.counters}>
+            <Part label={t.counters} points={parts.counters}>
               {suggestion.edges.map((edge) => (
                 <div key={edge.opponentId} className="flex flex-col gap-1">
                   <h5 className="flex items-center gap-2 text-sm">
-                    Against {nameOf(edge.opponentId)}
+                    {t.against(nameOf(edge.opponentId))}
                     <Points value={edge.points.total} />
                   </h5>
                   <ReasonList
-                    lines={edgeLines(edge, nameOf)}
-                    empty="No statistics, official notes or tag effects for this pair."
+                    lines={edgeLines(edge, nameOf, locale)}
+                    empty={t.noEdgeReasons}
                   />
                 </div>
               ))}
             </Part>
           ) : null}
-          <Part label="Synergy" points={parts.synergy}>
+          <Part label={t.synergy} points={parts.synergy}>
             <ReasonList
               lines={suggestion.links.map((link) => ({
                 points: link.points,
                 text: [
                   link.delta !== null
-                    ? `Win rate with ${nameOf(link.teammateId)} changes ${formatPoints(link.delta * 100)} points`
+                    ? t.synergyDelta(
+                        nameOf(link.teammateId),
+                        formatPoints(link.delta * 100, 1, locale),
+                      )
                     : null,
-                  link.note
-                    ? `Official note: good with ${nameOf(link.teammateId)}`
-                    : null,
+                  link.note ? t.synergyNote(nameOf(link.teammateId)) : null,
                 ]
                   .filter(Boolean)
                   .join("; "),
               }))}
-              empty="No numbers or official notes with the heroes already picked."
+              empty={t.noSynergy}
             />
           </Part>
-          <Part label="Current form" points={parts.meta}>
+          <Part label={t.currentForm} points={parts.meta}>
             <p className="text-sm text-muted-foreground">
               {meta
-                ? `Adjusted win rate ${formatPercent(meta.adjustedWinRate)} in ${rankLabel}.`
-                : `No statistics in ${rankLabel} yet.`}
+                ? t.adjustedWinRate(
+                    formatPercent(meta.adjustedWinRate, 1, locale),
+                    rankLabel,
+                  )
+                : t.noStats(rankLabel)}
             </p>
           </Part>
         </div>

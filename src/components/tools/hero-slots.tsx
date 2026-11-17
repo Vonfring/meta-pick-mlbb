@@ -2,6 +2,8 @@
 
 import { PlusIcon, XIcon } from "@/components/icons";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
+import { useLocale } from "@/i18n/client";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroSummary } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -34,13 +36,17 @@ export function HeroSlots({
   heroes: readonly HeroSummary[];
   size: number;
   side: TeamSide;
-  /** "enemy team", used in button labels. */
+  /**
+   * The team in the page language, without an article ("enemy team",
+   * "tim musuh"): the list name and part of the button labels.
+   */
   teamName: string;
   onRemove: (hero: HeroSummary) => void;
   onEmpty?: () => void;
   /** Highlights the team the picker adds to. */
   active?: boolean;
 }) {
+  const t = toolsText[useLocale()].slots;
   const classes = sideClasses[side];
   return (
     <ul
@@ -58,7 +64,7 @@ export function HeroSlots({
               <button
                 type="button"
                 onClick={() => onRemove(hero)}
-                aria-label={`Remove ${hero.name} from the ${teamName}`}
+                aria-label={t.removeHero(hero.name, teamName)}
                 className="group flex w-full flex-col items-center gap-1 text-center"
               >
                 <span className="relative w-full">
@@ -88,7 +94,7 @@ export function HeroSlots({
               <button
                 type="button"
                 onClick={onEmpty}
-                aria-label={`Empty slot in the ${teamName}`}
+                aria-label={t.emptySlot(teamName)}
                 className="flex w-full flex-col items-center gap-1"
               >
                 <span

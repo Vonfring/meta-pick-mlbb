@@ -1,28 +1,32 @@
-import type { Metadata } from "next";
 import { PageHeader } from "@/components/meta/page-header";
 import { StatisticsView } from "@/components/meta-stats/stats-table";
 import { DEFAULT_BRACKET, DEFAULT_PERIOD } from "@/config/filters";
+import { metaText } from "@/i18n/messages/meta";
+import { pageMetadata } from "@/i18n/metadata";
+import { getLocale } from "@/i18n/server";
 import { getHeroes, getMetaSnapshot, toHeroSummary } from "@/lib/data";
 
-export const metadata: Metadata = {
-  title: "Hero statistics",
-  description:
-    "Win, pick and ban rates for every Mobile Legends hero by rank and period, with the change from the previous period.",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const t = metaText[locale].statisticsPage;
+  return pageMetadata(locale, "/statistics", {
+    title: t.title,
+    description: t.metaDescription,
+  });
+}
 
 export default async function StatisticsPage() {
-  const [heroes, initial] = await Promise.all([
+  const [heroes, initial, locale] = await Promise.all([
     getHeroes(),
     getMetaSnapshot(DEFAULT_BRACKET, DEFAULT_PERIOD),
+    getLocale(),
   ]);
   const summaries = heroes.map(toHeroSummary);
+  const t = metaText[locale].statisticsPage;
 
   return (
     <>
-      <PageHeader
-        title="Hero statistics"
-        description="Win, pick and ban rates for every hero. Pick rate is each hero's share of all picks; ban rate is the share of games in which the hero was banned."
-      />
+      <PageHeader title={t.title} description={t.description} />
       <StatisticsView heroes={summaries} initial={initial} />
     </>
   );

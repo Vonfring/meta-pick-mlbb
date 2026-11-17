@@ -1,5 +1,7 @@
 import Link from "@/components/locale-link";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
+import { useLocale } from "@/i18n/client";
+import { metaText } from "@/i18n/messages/meta";
 import type { MetaRow } from "@/lib/meta/meta-rows";
 import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -16,12 +18,19 @@ const tierBand: Record<Tier, string> = {
 };
 
 function HeroCell({ hero, row }: { hero: HeroSummary; row: MetaRow }) {
+  const locale = useLocale();
+  const t = metaText[locale].tierBoard;
   return (
     <li>
       <Link
         href={`/heroes/${hero.slug}`}
         className="group flex w-14 flex-col items-center gap-1 rounded-md p-0.5 text-center sm:w-16"
-        title={`${hero.name}: win rate ${formatPercent(row.winRate)}, pick rate ${formatPercent(row.pickRate, 2)}, ban rate ${formatPercent(row.banRate)}`}
+        title={t.heroTitle(
+          hero.name,
+          formatPercent(row.winRate, 1, locale),
+          formatPercent(row.pickRate, 2, locale),
+          formatPercent(row.banRate, 1, locale),
+        )}
       >
         <HeroAvatar
           name={hero.name}
@@ -34,7 +43,7 @@ function HeroCell({ hero, row }: { hero: HeroSummary; row: MetaRow }) {
           {hero.name}
         </span>
         <span className="text-[0.6875rem] leading-none text-muted-foreground tabular-nums">
-          {formatPercent(row.winRate)}
+          {formatPercent(row.winRate, 1, locale)}
         </span>
       </Link>
     </li>
@@ -49,6 +58,7 @@ export function TierBoard({
   heroes: Map<number, HeroSummary>;
   rows: MetaRow[];
 }) {
+  const t = metaText[useLocale()].tierBoard;
   const unranked = rows.filter((r) => r.tier === null);
   return (
     <div className="flex flex-col gap-2">
@@ -57,7 +67,7 @@ export function TierBoard({
         return (
           <section
             key={tier}
-            aria-label={`Tier ${tier}`}
+            aria-label={t.tier(tier)}
             className="grid grid-cols-[3rem_minmax(0,1fr)] overflow-hidden rounded-lg border bg-surface sm:grid-cols-[4.5rem_minmax(0,1fr)]"
           >
             <div
@@ -80,7 +90,7 @@ export function TierBoard({
               </ul>
             ) : (
               <p className="self-center p-3 text-sm text-muted-foreground">
-                No heroes in this tier.
+                {t.emptyTier}
               </p>
             )}
           </section>
@@ -96,10 +106,10 @@ export function TierBoard({
               id="rarely-picked"
               className="font-display text-lg font-semibold"
             >
-              Rarely picked
+              {t.rarelyPicked}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Picked in too few games to rank fairly, so they have no tier.
+              {t.rarelyPickedBody}
             </p>
           </div>
           <ul className="flex flex-wrap gap-x-1.5 gap-y-3 rounded-lg border bg-surface p-2.5 sm:gap-x-2 sm:p-3">

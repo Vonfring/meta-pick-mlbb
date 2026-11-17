@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { Locale } from "@/i18n/config";
+import { common } from "@/i18n/messages/common";
+import { heroesText } from "@/i18n/messages/heroes";
+import { formatDate } from "@/lib/format";
 import type { HeroSkillRow, PairRow } from "@/types/data";
 import { bestTeammates, counteredBy, strongAgainst } from "./pairings";
 import { roleLine } from "./roles";
@@ -87,5 +91,51 @@ describe("roleLine", () => {
 
   it("leaves the lanes out when there are none", () => {
     expect(roleLine({ roles: ["mage"], lanes: [] })).toBe("Mage");
+  });
+
+  it("is written in Indonesian on Indonesian pages", () => {
+    expect(
+      roleLine({ roles: ["fighter", "tank"], lanes: ["exp", "roam"] }, "id"),
+    ).toBe("Fighter dan Tank, EXP Lane atau Roam");
+  });
+});
+
+describe("hero texts", () => {
+  const { en, id } = heroesText;
+
+  it("builds the summary line under the roster in both languages", () => {
+    const context = (locale: Locale) =>
+      heroesText[locale].snapshotUpdated(
+        heroesText[locale].snapshot(
+          common[locale].brackets.mythic,
+          common[locale].periods[7],
+        ),
+        formatDate("2026-10-14", locale),
+      );
+    expect(en.list.summary(12, 131, true, context("en"))).toBe(
+      "12 of 131 heroes. Tiers and win rates: Mythic, last 7 days, updated 14 Oct 2026.",
+    );
+    expect(id.list.summary(12, 131, true, context("id"))).toBe(
+      "12 dari 131 hero. Tier dan win rate: Mythic, 7 hari terakhir, di-update 14 Okt 2026.",
+    );
+    expect(id.list.summary(131, 131, false, id.list.noStats)).toBe(
+      "131 hero. Tier dan win rate: belum ada statistik.",
+    );
+  });
+
+  it("leaves the snapshot out of the section text when there is none", () => {
+    expect(id.detail.bestTeammatesDescription("Fanny", null)).toBe(
+      "Hero yang paling ngangkat win rate Fanny kalo satu tim.",
+    );
+    expect(
+      id.detail.bestTeammatesDescription("Fanny", "Mythic, 7 hari terakhir"),
+    ).toBe(
+      "Hero yang paling ngangkat win rate Fanny kalo satu tim (Mythic, 7 hari terakhir).",
+    );
+  });
+
+  it("writes cooldowns with a decimal comma in Indonesian", () => {
+    expect(en.detail.cooldown("7.5")).toBe("Cooldown 7.5s");
+    expect(id.detail.cooldown("7.5")).toBe("Cooldown 7,5 detik");
   });
 });

@@ -82,13 +82,15 @@ export function LanguageToggleButton({ className }: { className?: string }) {
       href={hrefFor(other)}
       hrefLang={other}
       lang={other}
-      aria-label={localeNames[other]}
+      title={localeNames[other]}
       className={cn(
         "inline-flex h-10 min-w-10 items-center justify-center rounded-md px-2 font-display text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground",
         className,
       )}
     >
+      {/* The accessible name starts with the visible "ID" (WCAG 2.5.3). */}
       {short[other]}
+      <span className="sr-only"> ({localeNames[other]})</span>
     </a>
   );
 }

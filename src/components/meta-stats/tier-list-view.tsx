@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLocale } from "@/i18n/client";
+import { metaText } from "@/i18n/messages/meta";
 import type { HeroSummary, MetaSnapshot } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { MetaFilters, useMetaFilters } from "./meta-filters";
@@ -16,6 +18,7 @@ export function TierListView({
   heroes: HeroSummary[];
   initial: MetaSnapshot;
 }) {
+  const t = metaText[useLocale()].filters;
   const { state, setParams } = useMetaFilters();
   const { data, loading, error } = useMetaSnapshot(
     initial,
@@ -45,7 +48,7 @@ export function TierListView({
           <TierBoard heroes={byId} rows={rows} />
         ) : (
           <p className="rounded-lg border border-dashed bg-surface/60 p-6 text-sm text-muted-foreground">
-            No hero matches these filters.
+            {t.noMatch}
           </p>
         )}
       </div>

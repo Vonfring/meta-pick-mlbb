@@ -4,6 +4,8 @@ import { useId, useState } from "react";
 import { MagnifyingGlassIcon } from "@/components/icons";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
 import { Input } from "@/components/ui/input";
+import { useLocale } from "@/i18n/client";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroSummary } from "@/lib/data";
 import { searchKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,8 +31,12 @@ export function HeroPicker({
   /** Heroes already used; shown dimmed and cannot be picked again. */
   taken: ReadonlySet<number>;
   onPick: (hero: HeroSummary) => void;
+  /**
+   * In the page language, like the other texts passed in; for example
+   * toolsText[locale].picker.searchHeroes.
+   */
   placeholder: string;
-  /** What the order means, shown while the search is empty. */
+  /** What the order means, shown while the search is empty (toolsText[locale].picker.mostPickedFirst). */
   caption: string;
   /** Accessible name of each portrait button, e.g. "Add Fanny to the enemy team". */
   actionLabel: (name: string) => string;
@@ -41,6 +47,7 @@ export function HeroPicker({
   inputRef?: React.Ref<HTMLInputElement>;
   className?: string;
 }) {
+  const t = toolsText[useLocale()].picker;
   const [query, setQuery] = useState("");
   const inputId = useId();
   const statusId = useId();
@@ -94,10 +101,7 @@ export function HeroPicker({
         )}
         aria-live="polite"
       >
-        {blocked ??
-          (key
-            ? `${shown.length} ${shown.length === 1 ? "match" : "matches"}`
-            : caption)}
+        {blocked ?? (key ? t.matches(shown.length) : caption)}
       </p>
       {blocked || (!key && !gridWhenEmpty) ? null : shown.length > 0 ? (
         <ul className="grid max-h-72 grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-1 overflow-y-auto overscroll-contain rounded-lg border bg-surface p-1.5">
@@ -110,7 +114,7 @@ export function HeroPicker({
                   disabled={isTaken}
                   aria-label={
                     isTaken
-                      ? `${hero.name}, already picked`
+                      ? t.alreadyPicked(hero.name)
                       : actionLabel(hero.name)
                   }
                   onClick={() => pick(hero)}
@@ -130,7 +134,7 @@ export function HeroPicker({
         </ul>
       ) : (
         <p className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
-          No hero matches “{query}”.
+          {t.noMatch(query)}
         </p>
       )}
     </div>

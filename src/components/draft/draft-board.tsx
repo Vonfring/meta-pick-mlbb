@@ -3,16 +3,13 @@
 import { PlusIcon } from "@/components/icons";
 import { HeroAvatar } from "@/components/meta/hero-avatar";
 import type { DraftTeam } from "@/config/draft-order";
+import { useLocale } from "@/i18n/client";
+import { draftText } from "@/i18n/messages/draft";
 import type { HeroSummary } from "@/lib/data";
 import { type DraftStep, SKIP, type Slot } from "@/lib/draft/board";
 import type { TeamStrength } from "@/lib/scoring/draft";
 import { cn } from "@/lib/utils";
 import { LockIn } from "./lock-in";
-
-export const teamName: Record<DraftTeam, string> = {
-  blue: "Blue team",
-  red: "Red team",
-};
 
 const tone: Record<DraftTeam, { border: string; text: string; soft: string }> =
   {
@@ -57,9 +54,10 @@ export function DraftTeamPanel({
       .filter((s) => s.team === team && s.action === action)
       .map((step) => ({ step, hero: slots[step.index]! }));
   const t = tone[team];
+  const text = draftText[useLocale()];
   return (
     <section
-      aria-label={`${teamName[team]}${isYou ? " (you)" : ""}`}
+      aria-label={text.board.panel(team, isYou)}
       className={cn(
         "flex flex-col gap-3",
         align === "end" ? "items-end text-right" : "items-start",
@@ -72,15 +70,15 @@ export function DraftTeamPanel({
         )}
       >
         <h2 className={cn("font-display text-lg font-semibold", t.text)}>
-          {teamName[team]}
+          {text.teams[team]}
           {isYou ? (
             <span className="ml-1.5 text-sm font-medium text-muted-foreground">
-              (you)
+              {text.board.you}
             </span>
           ) : null}
         </h2>
         <span className="text-sm text-muted-foreground">
-          Strength{" "}
+          {text.board.strength}{" "}
           <span className="font-display text-base font-bold text-foreground tabular-nums">
             {strength ? strength.total : "—"}
           </span>
@@ -88,7 +86,7 @@ export function DraftTeamPanel({
       </div>
       <ul
         className={cn("flex gap-1.5", align === "end" && "flex-row-reverse")}
-        aria-label={`${teamName[team]} bans`}
+        aria-label={text.board.bans(team)}
       >
         {view("ban").map(({ step, hero }) => (
           <li key={step.index}>
@@ -103,7 +101,7 @@ export function DraftTeamPanel({
       </ul>
       <ul
         className="grid w-full max-w-md grid-cols-5 gap-2"
-        aria-label={`${teamName[team]} picks`}
+        aria-label={text.board.picks(team)}
       >
         {view("pick").map(({ step, hero }) => {
           const summary =
@@ -144,7 +142,7 @@ export function DraftTeamPanel({
                     <PlusIcon className={cn("size-5", t.text)} aria-hidden />
                   ) : null}
                   <span className="sr-only">
-                    {isCurrent ? "Picking now" : "Pick not made yet"}
+                    {isCurrent ? text.board.pickingNow : text.board.pickPending}
                   </span>
                 </span>
               )}
@@ -171,14 +169,15 @@ function BanSlot({
   team: DraftTeam;
 }) {
   const t = tone[team];
+  const text = draftText[useLocale()].board;
   if (hero === SKIP)
     return (
       <span
         className="flex size-8 items-center justify-center rounded-sm border text-xs text-muted-foreground"
-        title="No ban"
+        title={text.skipped}
       >
         <span aria-hidden>{"—"}</span>
-        <span className="sr-only">No ban</span>
+        <span className="sr-only">{text.skipped}</span>
       </span>
     );
   if (!hero)
@@ -190,13 +189,13 @@ function BanSlot({
         )}
       >
         <span className="sr-only">
-          {isCurrent ? "Banning now" : "Ban not made yet"}
+          {isCurrent ? text.banningNow : text.banPending}
         </span>
       </span>
     );
   return (
     <LockIn play={play}>
-      <span className="relative block" title={`${hero.name} banned`}>
+      <span className="relative block" title={text.banned(hero.name)}>
         <HeroAvatar
           name={hero.name}
           src={hero.head_image_url}

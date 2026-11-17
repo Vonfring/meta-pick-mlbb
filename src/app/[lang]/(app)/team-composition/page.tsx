@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
 import { PageHeader } from "@/components/meta/page-header";
 import { TeamCompositionView } from "@/components/team-composition/team-composition-view";
 import { CompositionMethod } from "@/components/tools/composition-method";
 import { DEFAULT_BRACKET } from "@/config/filters";
+import { compositionText } from "@/i18n/messages/composition";
+import { pageMetadata } from "@/i18n/metadata";
+import { getLocale } from "@/i18n/server";
 import {
   getHeroes,
   getHeroKnowledge,
@@ -10,25 +12,27 @@ import {
   toHeroSummary,
 } from "@/lib/data";
 
-export const metadata: Metadata = {
-  title: "Team composition",
-  description:
-    "Pick up to five heroes and see what the lineup has, what it lacks, and which heroes fill the gaps.",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const t = compositionText[locale].page;
+  return pageMetadata(locale, "/team-composition", {
+    title: t.title,
+    description: t.description,
+  });
+}
 
 export default async function TeamCompositionPage() {
-  const [heroes, knowledge, initial] = await Promise.all([
+  const [heroes, knowledge, initial, locale] = await Promise.all([
     getHeroes(),
     getHeroKnowledge(),
     getMatchupSnapshot(DEFAULT_BRACKET),
+    getLocale(),
   ]);
+  const t = compositionText[locale].page;
 
   return (
     <>
-      <PageHeader
-        title="Team composition"
-        description="Pick up to five heroes and see what the lineup has, what it lacks, and which heroes fill the gaps."
-      />
+      <PageHeader title={t.title} description={t.description} />
       <div className="flex flex-col gap-8">
         <TeamCompositionView
           heroes={heroes.map(toHeroSummary)}

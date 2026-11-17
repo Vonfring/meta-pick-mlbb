@@ -16,13 +16,16 @@ import { StrengthCard } from "@/components/tools/strength";
 import { useToolData } from "@/components/tools/use-tool-data";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_BRACKET } from "@/config/filters";
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
+import { compositionText } from "@/i18n/messages/composition";
+import { toolsText } from "@/i18n/messages/tools";
 import type { HeroKnowledge, HeroSummary, MatchupSnapshot } from "@/lib/data";
 import { heroListParam, parseHeroList } from "@/lib/hero-list-param";
 import { TEAM_SIZE } from "@/lib/scoring/composition";
 import { suggestPicks, suggestSwaps, teamStrength } from "@/lib/scoring/draft";
 import { rankParam, useUrlParams } from "@/lib/use-url-params";
 import { cn } from "@/lib/utils";
-import { bracketLabels } from "@/types/domain";
 
 /** Team composition: one team's checklist, strength and fixes. State lives in the URL. */
 export function TeamCompositionView({
@@ -34,6 +37,9 @@ export function TeamCompositionView({
   knowledge: HeroKnowledge;
   initial: MatchupSnapshot;
 }) {
+  const locale = useLocale();
+  const t = compositionText[locale].view;
+  const tools = toolsText[locale];
   const [params, setParams] = useUrlParams();
   const bracket = rankParam(params.get("rank"));
   const openLanesOnly = params.get("lanes") !== "any";
@@ -54,8 +60,8 @@ export function TeamCompositionView({
     bracket,
   );
   const searchRef = useRef<HTMLInputElement>(null);
-  const nameOf = (id: number) => byId.get(id)?.name ?? "Unknown hero";
-  const rankLabel = bracketLabels[snapshot.bracket];
+  const nameOf = (id: number) => byId.get(id)?.name ?? tools.unknownHero;
+  const rankLabel = common[locale].brackets[snapshot.bracket];
 
   const setTeam = (next: HeroSummary[]) =>
     setParams({ team: heroListParam(next) });
@@ -84,11 +90,11 @@ export function TeamCompositionView({
       >
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="team-heading" className="font-display text-lg font-semibold">
-            Your team
+            {t.yourTeam}
           </h2>
           {team.length > 0 ? (
             <Button variant="ghost" size="sm" onClick={() => setTeam([])}>
-              Clear
+              {t.clear}
             </Button>
           ) : null}
         </div>
@@ -96,7 +102,7 @@ export function TeamCompositionView({
           heroes={team}
           size={TEAM_SIZE}
           side="ally"
-          teamName="your team"
+          teamName={t.teamName}
           onRemove={(hero) => setTeam(team.filter((h) => h !== hero))}
           onEmpty={() => searchRef.current?.focus()}
         />
@@ -105,16 +111,14 @@ export function TeamCompositionView({
           heroes={popular}
           taken={new Set(team.map((h) => h.id))}
           onPick={(hero) => setTeam([...team, hero])}
-          placeholder="Search heroes"
-          caption={`Most picked in ${rankLabel} first.`}
-          actionLabel={(name) => `Add ${name} to your team`}
-          blocked={
-            full ? "The team is full. Tap a hero above to remove it." : null
-          }
+          placeholder={tools.picker.searchHeroes}
+          caption={tools.picker.mostPickedFirst(rankLabel)}
+          actionLabel={t.addToTeam}
+          blocked={full ? t.teamFull : null}
         />
       </section>
 
-      <section aria-label="Result" className="flex min-w-0 flex-col gap-6">
+      <section aria-label={t.result} className="flex min-w-0 flex-col gap-6">
         <div className="flex flex-col gap-3">
           <RankSelect
             className="sm:max-w-56"
@@ -129,8 +133,8 @@ export function TeamCompositionView({
         {team.length === 0 ? (
           <EmptyState
             icon={UsersFourIcon}
-            title="Add your first hero"
-            description="Pick up to five heroes. The checklist shows what the lineup has and lacks, and the suggestions show which heroes fill the gaps."
+            title={t.emptyTitle}
+            description={t.emptyDescription}
           />
         ) : (
           <div
@@ -146,7 +150,9 @@ export function TeamCompositionView({
                 className="flex flex-col gap-3 rounded-lg border bg-surface p-4"
               >
                 <h3 id="checklist-heading" className="font-medium">
-                  Checklist{full ? "" : ` for ${team.length} of ${TEAM_SIZE}`}
+                  {full
+                    ? t.checklist
+                    : t.checklistPartial(team.length, TEAM_SIZE)}
                 </h3>
                 <CompositionChecklist
                   report={strength!.report}
@@ -166,12 +172,10 @@ export function TeamCompositionView({
                   id="swaps-heading"
                   className="font-display text-lg font-semibold"
                 >
-                  Swaps that help
+                  {t.swapsHeading}
                 </h3>
                 {swaps.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No single swap improves the checklist.
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t.noSwaps}</p>
                 ) : (
                   <ul className="flex flex-col gap-2">
                     {swaps.map((swap) => {
@@ -201,7 +205,7 @@ export function TeamCompositionView({
                             />
                             <span className="min-w-0">
                               <span className="block truncate font-medium">
-                                Swap {out.name} for {into.name}
+                                {t.swapLine(out.name, into.name)}
                               </span>
                               <FixList fixes={swap.fixes} />
                             </span>
@@ -215,7 +219,7 @@ export function TeamCompositionView({
                                 setTeam(team.map((h) => (h === out ? into : h)))
                               }
                             >
-                              Swap
+                              {t.swap}
                             </Button>
                           </span>
                         </li>
@@ -234,7 +238,7 @@ export function TeamCompositionView({
                     id="fill-heading"
                     className="font-display text-lg font-semibold"
                   >
-                    Heroes that fill the gaps
+                    {t.fillHeading}
                   </h3>
                   <LaneFilter
                     openLanesOnly={openLanesOnly}
@@ -260,10 +264,10 @@ export function TeamCompositionView({
                           <Button
                             variant="outline"
                             size="sm"
-                            aria-label={`Add ${hero.name} to your team`}
+                            aria-label={t.addToTeam(hero.name)}
                             onClick={() => setTeam([...team, hero])}
                           >
-                            Add
+                            {t.add}
                           </Button>
                         }
                       />

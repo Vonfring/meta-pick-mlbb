@@ -6,17 +6,25 @@ import {
 import { HexagonIcon } from "@/components/icons";
 import { EmptyState } from "@/components/meta/empty-state";
 import { PageHeader } from "@/components/meta/page-header";
+import { catalogText } from "@/i18n/messages/catalog";
+import { pageMetadata } from "@/i18n/metadata";
+import { getLocale } from "@/i18n/server";
 import { toTalentViews } from "@/lib/catalog/emblems";
 import { splitCooldown } from "@/lib/catalog/text";
 import { getEmblemCatalog, getSpells } from "@/lib/data";
 
-export const metadata: Metadata = {
-  title: "Emblems",
-  description:
-    "Mobile Legends emblem sets and talents, the set each role runs, and every battle spell.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = catalogText[locale].emblems;
+  return pageMetadata(locale, "/emblems", {
+    title: t.title,
+    description: t.metaDescription,
+  });
+}
 
 export default async function EmblemsPage() {
+  const c = catalogText[await getLocale()];
+  const t = c.emblems;
   const [{ emblems, talents }, spells] = await Promise.all([
     getEmblemCatalog(),
     getSpells(),
@@ -33,18 +41,15 @@ export default async function EmblemsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Emblems"
-        description="Each emblem set gives fixed stats and a choice of talents. Pick your role to see the set made for it."
-      />
+      <PageHeader title={t.title} description={t.description} />
 
       {sets.length > 0 ? (
         <EmblemExplorer sets={sets} talents={toTalentViews(emblems, talents)} />
       ) : (
         <EmptyState
           icon={HexagonIcon}
-          title="No emblem data yet"
-          description="Emblem sets and talents appear here after the next catalog update."
+          title={t.emptyTitle}
+          description={t.emptyDescription}
         />
       )}
 
@@ -58,10 +63,10 @@ export default async function EmblemsPage() {
               id="battle-spells"
               className="font-display text-lg font-semibold"
             >
-              Battle spells
+              {t.battleSpells}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Every hero takes one spell into the match.
+              {t.battleSpellsDescription}
             </p>
           </div>
           <ul className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -76,7 +81,7 @@ export default async function EmblemsPage() {
                     <h3 className="font-semibold">{spell.name}</h3>
                     {cooldown ? (
                       <span className="text-xs text-muted-foreground tabular-nums">
-                        Cooldown {cooldown}s
+                        {c.cooldown(cooldown)}
                       </span>
                     ) : null}
                   </div>

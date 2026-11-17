@@ -1,14 +1,26 @@
+"use client";
+
 import type * as React from "react";
+import { useLocale } from "@/i18n/client";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/config";
+import { matchupText } from "@/i18n/messages/matchup";
 import type { Verdict } from "@/lib/scoring/matchup";
 import { cn } from "@/lib/utils";
 
-/** "Khufra is favored", from the side names and a verdict. */
-export function verdictText(verdict: Verdict, first: string, second: string) {
-  if (!verdict.favored) return "Even matchup";
+/**
+ * "Khufra is favored" ("Khufra lebih unggul"), from the side names and a
+ * verdict. Pass the side names in the same language.
+ */
+export function verdictText(
+  verdict: Verdict,
+  first: string,
+  second: string,
+  locale: Locale = DEFAULT_LOCALE,
+) {
+  const t = matchupText[locale].verdict;
+  if (!verdict.favored) return t.even;
   const name = verdict.favored === "first" ? first : second;
-  return verdict.strength === "clear"
-    ? `${name} is favored`
-    : `Slight edge to ${name}`;
+  return verdict.strength === "clear" ? t.favored(name) : t.slight(name);
 }
 
 /**
@@ -29,10 +41,11 @@ export function VerdictBanner({
   first: React.ReactNode;
   second: React.ReactNode;
 }) {
+  const locale = useLocale();
   const firstShare = verdict.estimate;
   return (
     <section
-      aria-label="Verdict"
+      aria-label={matchupText[locale].verdict.label}
       className="flex flex-col gap-5 overflow-hidden rounded-lg border bg-[linear-gradient(to_top_right,var(--ally-soft)_calc(50%-1px),var(--border)_calc(50%-1px)_calc(50%+1px),var(--enemy-soft)_calc(50%+1px))] p-5 sm:p-6"
     >
       <div className="flex items-start justify-between gap-4">
@@ -41,7 +54,7 @@ export function VerdictBanner({
       </div>
       <div className="flex flex-col gap-3">
         <p className="font-display text-2xl font-bold" aria-live="polite">
-          {verdictText(verdict, firstName, secondName)}
+          {verdictText(verdict, firstName, secondName, locale)}
         </p>
         <EstimateBar
           first={firstShare}
@@ -49,7 +62,7 @@ export function VerdictBanner({
           secondName={secondName}
         />
         <p className="text-xs text-muted-foreground">
-          Rule-based estimate from the breakdown below, not a prediction.
+          {matchupText[locale].verdict.note}
         </p>
       </div>
     </section>

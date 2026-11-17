@@ -1,16 +1,20 @@
 "use client";
 
 import { ChipGroup, type ChipOption } from "@/components/ui/chip-group";
+import type { Locale } from "@/i18n/config";
+import { useLocale } from "@/i18n/client";
+import { catalogText } from "@/i18n/messages/catalog";
+import { common } from "@/i18n/messages/common";
 import {
   SHARED_EMBLEM_SLUG,
   setForRole,
   type TalentView,
-  talentTierLabels,
 } from "@/lib/catalog/emblems";
+import { rolesText } from "@/lib/heroes/roles";
 import { oneOf, useUrlParams } from "@/lib/use-url-params";
 import { cn } from "@/lib/utils";
 import type { EmblemRow } from "@/types/data";
-import { HERO_ROLES, type HeroRole, roleLabels } from "@/types/domain";
+import { HERO_ROLES, type HeroRole } from "@/types/domain";
 
 export type EmblemSetView = Pick<
   EmblemRow,
@@ -20,13 +24,15 @@ export type EmblemSetView = Pick<
 function SetCard({
   set,
   recommended,
+  locale,
 }: {
   set: EmblemSetView;
   recommended: boolean;
+  locale: Locale;
 }) {
-  const roles = set.recommended_roles
-    .map((role) => roleLabels[role])
-    .join(" and ");
+  const c = catalogText[locale];
+  const t = c.emblems;
+  const roles = rolesText(set.recommended_roles, locale);
   return (
     <article
       className={cn(
@@ -39,19 +45,19 @@ function SetCard({
           <h3 className="font-display text-lg font-semibold">{set.name}</h3>
           {recommended ? (
             <span className="rounded-sm bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-              Recommended
+              {t.recommended}
             </span>
           ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
           {set.slug === SHARED_EMBLEM_SLUG
-            ? "No role of its own. Every set can take its talents."
+            ? t.sharedSet
             : roles
-              ? `Made for ${roles} heroes`
-              : "No role listed"}
+              ? t.madeFor(roles)
+              : t.noRole}
         </p>
       </header>
-      <ul className="flex flex-col gap-0.5 text-sm" aria-label="Stats">
+      <ul className="flex flex-col gap-0.5 text-sm" aria-label={c.stats}>
         {set.attributes.map((attribute) => (
           <li key={attribute.label}>
             <span className="font-medium tabular-nums">{attribute.value}</span>{" "}
@@ -63,13 +69,22 @@ function SetCard({
   );
 }
 
-function TalentEntry({ talent }: { talent: TalentView }) {
+function TalentEntry({
+  talent,
+  locale,
+}: {
+  talent: TalentView;
+  locale: Locale;
+}) {
+  const c = catalogText[locale];
   return (
     <li className="flex flex-col gap-1 px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <h4 className="font-semibold">{talent.name}</h4>
         <span className="text-xs text-muted-foreground">
-          {talent.setName ? `${talent.setName} set` : "Any set"}
+          {talent.setName
+            ? c.emblems.setName(talent.setName)
+            : c.emblems.anySet}
         </span>
       </div>
       {talent.summary ? (
@@ -80,7 +95,7 @@ function TalentEntry({ talent }: { talent: TalentView }) {
       </p>
       {talent.cooldown ? (
         <p className="text-xs text-muted-foreground tabular-nums">
-          Cooldown {talent.cooldown}s
+          {c.cooldown(talent.cooldown)}
         </p>
       ) : null}
     </li>
@@ -95,6 +110,9 @@ export function EmblemExplorer({
   sets: EmblemSetView[];
   talents: TalentView[];
 }) {
+  const locale = useLocale();
+  const t = catalogText[locale].emblems;
+  const roleLabels = common[locale].roles;
   const [params, setParams] = useUrlParams();
   const role = oneOf<HeroRole>(params.get("role"), HERO_ROLES);
   const recommended = role === "all" ? undefined : setForRole(sets, role);
@@ -128,7 +146,7 @@ export function EmblemExplorer({
   );
 
   const options: ChipOption<HeroRole | "all">[] = [
-    { value: "all", label: "All roles" },
+    { value: "all", label: t.allRoles },
     ...HERO_ROLES.map((r) => ({ value: r, label: roleLabels[r] })),
   ];
 
@@ -136,7 +154,7 @@ export function EmblemExplorer({
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3">
         <ChipGroup
-          label="Role"
+          label={t.role}
           options={options}
           value={role}
           onChange={(value) =>
@@ -145,21 +163,25 @@ export function EmblemExplorer({
         />
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {role === "all"
-            ? "Pick a role to see the set made for it and the talents that set can take."
+            ? t.pickRole
             : recommended
-              ? `The ${recommended.name} set is made for ${roleLabels[role]} heroes. A loadout takes one talent per tier, from the ${recommended.name} set or from the talents every set can take.`
-              : `No set lists the ${roleLabels[role]} role. The shared talents are below.`}
+              ? t.recommendedSet(recommended.name, roleLabels[role])
+              : t.noSetForRole(roleLabels[role])}
         </p>
       </div>
 
       <section aria-labelledby="emblem-sets" className="flex flex-col gap-3">
         <h2 id="emblem-sets" className="font-display text-lg font-semibold">
-          Sets
+          {t.sets}
         </h2>
         <ul className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {shownSets.map((set) => (
             <li key={set.id}>
-              <SetCard set={set} recommended={set.id === recommended?.id} />
+              <SetCard
+                set={set}
+                recommended={set.id === recommended?.id}
+                locale={locale}
+              />
             </li>
           ))}
         </ul>
@@ -171,10 +193,10 @@ export function EmblemExplorer({
             id="emblem-talents"
             className="font-display text-lg font-semibold"
           >
-            Talents
+            {t.talents}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Pick one talent for each tier.
+            {t.talentsDescription}
           </p>
         </div>
         <div className="grid items-start gap-4 lg:grid-cols-3">
@@ -185,14 +207,18 @@ export function EmblemExplorer({
             return (
               <div key={tier} className="flex flex-col gap-2">
                 <h3 className="text-sm font-semibold">
-                  {talentTierLabels[tier] ?? `Tier ${tier}`}
+                  {t.tiers[tier] ?? t.tierFallback(tier)}
                   <span className="ml-2 font-normal text-muted-foreground tabular-nums">
                     {inTier.length}
                   </span>
                 </h3>
                 <ul className="flex flex-col divide-y rounded-lg border bg-surface">
                   {inTier.map((talent) => (
-                    <TalentEntry key={talent.id} talent={talent} />
+                    <TalentEntry
+                      key={talent.id}
+                      talent={talent}
+                      locale={locale}
+                    />
                   ))}
                 </ul>
               </div>

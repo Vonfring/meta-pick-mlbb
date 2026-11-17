@@ -1,38 +1,49 @@
 import { COMPOSITION_RULES } from "@/config/composition-rules";
 import { DRAFT_SCORING } from "@/config/draft-scoring";
+import {
+  compositionRuleText,
+  compositionText,
+} from "@/i18n/messages/composition";
+import { getLocale } from "@/i18n/server";
+import { formatDecimal } from "@/lib/format";
 
 /** How the checklist, suggestions and strength work, written from the config files. */
-export function CompositionMethod({
-  title = "How the checklist and suggestions work",
+export async function CompositionMethod({
+  title,
 }: {
+  /** Defaults to "How the checklist and suggestions work" in the page language. */
   title?: string;
 }) {
+  const locale = await getLocale();
+  const t = compositionText[locale].method;
   const { metaWeight, compositionPoints, teammateNotePoints, strength } =
     DRAFT_SCORING;
+  // Config values as written ("0.3", "5"), with the language's decimal mark.
+  const number = (value: number) =>
+    formatDecimal(
+      value,
+      Math.min(2, (String(value).split(".")[1] ?? "").length),
+      locale,
+    );
   return (
     <details className="group rounded-lg border bg-surface">
       <summary className="cursor-pointer list-none px-4 py-3 font-medium marker:hidden">
-        {title}
+        {title ?? t.title}
       </summary>
       <div className="flex max-w-[72ch] flex-col gap-4 border-t px-4 py-4 text-sm text-muted-foreground">
-        <p>
-          Each hero has curated tags from 0 to 3 (frontline, crowd control, peel
-          and so on). A check adds up one tag over the team. Lanes come from the
-          official hero data, and a team passes when every hero can take a lane
-          of its own.
-        </p>
+        <p>{t.tags}</p>
         <div className="overflow-x-auto rounded-md border">
           <table className="w-full text-left">
             <thead className="bg-surface-2 text-xs">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">
-                  Check
+                  {t.check}
                 </th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">
-                  OK from
+                  {t.okFrom}
                 </th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">
-                  Weak from
+                  {t.weakFrom}
                 </th>
               </tr>
             </thead>
@@ -40,21 +51,21 @@ export function CompositionMethod({
               {COMPOSITION_RULES.checks.map((check) => (
                 <tr key={check.id}>
                   <th scope="row" className="px-3 py-1.5 font-normal">
-                    {check.label}
+                    {compositionRuleText(locale, check).label}
                   </th>
                   <td className="px-3 py-1.5 text-right">
                     {check.kind === "tag"
                       ? check.ok
                       : check.kind === "lanes"
-                        ? "every hero"
-                        : "1.5 of each"}
+                        ? t.everyHero
+                        : t.ofEach(number(1.5))}
                   </td>
                   <td className="px-3 py-1.5 text-right">
                     {check.kind === "tag"
                       ? check.weak
                       : check.kind === "lanes"
-                        ? "one short"
-                        : "0.5 of each"}
+                        ? t.oneShort
+                        : t.ofEach(number(0.5))}
                   </td>
                 </tr>
               ))}
@@ -62,18 +73,19 @@ export function CompositionMethod({
           </table>
         </div>
         <p>
-          Suggested heroes are ranked by points: how much the checklist score
-          rises (times {compositionPoints}), the win rate change with each
-          teammate plus {teammateNotePoints} for an official &ldquo;best
-          teammate&rdquo; note, the edge against enemy picks when there are any,
-          and {metaWeight} per percentage point of adjusted win rate above 50%.
+          {t.suggestions(
+            number(compositionPoints),
+            number(teammateNotePoints),
+            number(metaWeight),
+          )}
         </p>
         <p>
-          Team strength out of 100: {strength.composition} for the share of
-          checks passed, {strength.form} for how the heroes rank by adjusted win
-          rate, and {strength.synergy} for synergy, which starts at 50% and
-          moves {100 / strength.synergyScale}% per point of win rate change
-          between teammates.
+          {t.strength(
+            strength.composition,
+            strength.form,
+            strength.synergy,
+            number(100 / strength.synergyScale),
+          )}
         </p>
       </div>
     </details>

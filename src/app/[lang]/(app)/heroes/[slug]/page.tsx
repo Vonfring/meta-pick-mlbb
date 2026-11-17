@@ -13,6 +13,11 @@ import {
   DEFAULT_PERIOD,
   MATCHUP_PERIOD,
 } from "@/config/filters";
+import type { Locale } from "@/i18n/config";
+import { common } from "@/i18n/messages/common";
+import { heroesText } from "@/i18n/messages/heroes";
+import { pageMetadata } from "@/i18n/metadata";
+import { getLocale } from "@/i18n/server";
 import {
   getHeroDetails,
   getHeroes,
@@ -31,9 +36,9 @@ import {
 } from "@/lib/heroes/pairings";
 import { roleLine, rolesText } from "@/lib/heroes/roles";
 import { displaySkills } from "@/lib/heroes/skills";
-import { damageTypeLabels, RATING_FIELDS, TAG_FIELDS } from "@/lib/heroes/tags";
+import { RATING_FIELDS, TAG_FIELDS } from "@/lib/heroes/tags";
 import type { HeroRelationKind } from "@/types/data";
-import { bracketLabels, periodLabels, RANK_BRACKETS } from "@/types/domain";
+import { RANK_BRACKETS } from "@/types/domain";
 
 export const generateStaticParams = getHeroSlugParams;
 
@@ -46,28 +51,34 @@ async function findHero(slug: string) {
 }
 
 /** "Mythic, last 7 days" */
-function describeSnapshot(snapshot: SnapshotInfo | null) {
+function describeSnapshot(snapshot: SnapshotInfo | null, locale: Locale) {
+  const c = common[locale];
   return snapshot
-    ? `${bracketLabels[snapshot.rank_bracket]}, ${periodLabels[snapshot.period_days].toLowerCase()}`
+    ? heroesText[locale].snapshot(
+        c.brackets[snapshot.rank_bracket],
+        c.periods[snapshot.period_days],
+      )
     : null;
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/[lang]/heroes/[slug]">): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = heroesText[locale].detail;
   const hero = await findHero((await params).slug);
-  if (!hero) return { title: "Hero not found" };
-  return {
+  if (!hero) return { title: t.notFoundTitle };
+  return pageMetadata(locale, `/heroes/${hero.slug}`, {
     title: hero.name,
-    description: `${hero.name} (${rolesText(hero.roles)}) in Mobile Legends: win rate, tier, the heroes ${hero.name} beats and loses to, best teammates and skills.`,
-  };
+    description: t.metaDescription(hero.name, rolesText(hero.roles, locale)),
+  });
 }
 
-const relationTitles: Record<HeroRelationKind, string> = {
-  best_teammate: "Works well with",
-  strong_against: "Strong against",
-  weak_against: "Weak against",
-};
+const RELATION_KINDS: readonly HeroRelationKind[] = [
+  "best_teammate",
+  "strong_against",
+  "weak_against",
+];
 
 function Section({
   title,
@@ -102,27 +113,27 @@ function StatFigure({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BackLink() {
+function BackLink({ locale }: { locale: Locale }) {
   return (
     <Link
       href="/heroes"
       className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <CaretLeftIcon className="size-4" aria-hidden />
-      All heroes
+      {heroesText[locale].detail.allHeroes}
     </Link>
   );
 }
 
 /** Shown while a hero page streams in, for example on the first visit to a new hero. */
-function HeroPageSkeleton() {
+function HeroPageSkeleton({ locale }: { locale: Locale }) {
   return (
     <div
       className="flex flex-col gap-6"
       aria-busy="true"
-      aria-label="Loading hero"
+      aria-label={heroesText[locale].detail.loading}
     >
-      <BackLink />
+      <BackLink locale={locale} />
       <div className="flex flex-col gap-5 sm:flex-row">
         <Skeleton className="size-28 rounded-sm" />
         <div className="flex flex-1 flex-col gap-3">
@@ -139,17 +150,24 @@ function HeroPageSkeleton() {
 
 // The hero page reads its slug inside <Suspense>, so navigating to a hero
 // shows the skeleton at once. Every hero known at build time is prerendered.
-export default function HeroPage(props: PageProps<"/[lang]/heroes/[slug]">) {
+// The language comes from the root layout's segment, known at build time.
+export default async function HeroPage(
+  props: PageProps<"/[lang]/heroes/[slug]">,
+) {
+  const locale = await getLocale();
   return (
-    <Suspense fallback={<HeroPageSkeleton />}>
-      <HeroDetail params={props.params} />
+    <Suspense fallback={<HeroPageSkeleton locale={locale} />}>
+      <HeroDetail params={props.params} locale={locale} />
     </Suspense>
   );
 }
 
 async function HeroDetail({
   params,
-}: Pick<PageProps<"/[lang]/heroes/[slug]">, "params">) {
+  locale,
+}: Pick<PageProps<"/[lang]/heroes/[slug]">, "params"> & { locale: Locale }) {
+  const t = heroesText[locale];
+  const c = common[locale];
   const { slug } = await params;
   // Inside <Suspense> the response has already started, so an unknown slug
   // gets the not-found page with a noindex tag rather than a 404 status.
@@ -176,32 +194,30 @@ async function HeroDetail({
   const beats = toEntries(strongAgainst(hero.id, matchups));
   const losesTo = toEntries(counteredBy(hero.id, matchups));
   const teammates = toEntries(bestTeammates(hero.id, pairs?.synergies ?? []));
-  const context = describeSnapshot(current.snapshot);
-  const pairContext = describeSnapshot(pairs);
+  const context = describeSnapshot(current.snapshot, locale);
+  const pairContext = describeSnapshot(pairs, locale);
 
-  const relationGroups = (Object.keys(relationTitles) as HeroRelationKind[])
-    .map((kind) => {
-      const rows = relations.filter((r) => r.relation === kind);
-      const targets = rows
-        .map((r) => heroById.get(r.target_hero_id))
-        .filter((h): h is RankedHero => h !== undefined);
-      return {
-        kind,
-        targets,
-        description: rows.find((r) => r.description)?.description ?? null,
-      };
-    })
-    .filter((group) => group.targets.length > 0);
+  const relationGroups = RELATION_KINDS.map((kind) => {
+    const rows = relations.filter((r) => r.relation === kind);
+    const targets = rows
+      .map((r) => heroById.get(r.target_hero_id))
+      .filter((h): h is RankedHero => h !== undefined);
+    return {
+      kind,
+      targets,
+      description: rows.find((r) => r.description)?.description ?? null,
+    };
+  }).filter((group) => group.targets.length > 0);
 
-  const ratings = RATING_FIELDS.flatMap(({ key, label }) => {
+  const ratings = RATING_FIELDS.flatMap(({ key }) => {
     const value = hero[key];
-    return value === null ? [] : [{ label, value }];
+    return value === null ? [] : [{ label: c.ratings[key], value }];
   });
 
   return (
     <article className="flex flex-col gap-10">
       <div className="flex flex-col gap-6">
-        <BackLink />
+        <BackLink locale={locale} />
 
         <header className="flex items-start gap-4 sm:gap-5">
           <div className="w-20 shrink-0 sm:w-28">
@@ -218,10 +234,13 @@ async function HeroDetail({
               <h1 className="font-display text-3xl font-bold sm:text-4xl">
                 {hero.name}
               </h1>
-              <p className="text-muted-foreground">{roleLine(hero)}</p>
+              <p className="text-muted-foreground">{roleLine(hero, locale)}</p>
             </div>
             {hero.specialties.length > 0 ? (
-              <ul className="flex flex-wrap gap-1.5" aria-label="Specialties">
+              <ul
+                className="flex flex-wrap gap-1.5"
+                aria-label={t.detail.specialties}
+              >
                 {hero.specialties.map((specialty) => (
                   <li
                     key={specialty}
@@ -246,68 +265,67 @@ async function HeroDetail({
           ) : (
             <span className="max-w-24 text-sm leading-tight text-muted-foreground">
               {(me?.winRate ?? null) === null
-                ? "No stats yet"
-                : "Rarely picked"}
+                ? t.detail.noStats
+                : t.detail.rarelyPicked}
             </span>
           )}
-          <StatFigure label="Win rate" value={formatPercent(me?.winRate)} />
           <StatFigure
-            label="Pick rate"
-            value={formatPercent(me?.pickRate, 2)}
+            label={t.winRate}
+            value={formatPercent(me?.winRate, 1, locale)}
           />
-          <StatFigure label="Ban rate" value={formatPercent(me?.banRate)} />
+          <StatFigure
+            label={t.pickRate}
+            value={formatPercent(me?.pickRate, 2, locale)}
+          />
+          <StatFigure
+            label={t.banRate}
+            value={formatPercent(me?.banRate, 1, locale)}
+          />
           {context ? (
             <p className="col-span-full text-sm text-muted-foreground sm:ml-auto">
-              {context}
               {current.snapshot
-                ? `, updated ${formatDate(current.snapshot.fetched_at)}`
-                : ""}
+                ? t.snapshotUpdated(
+                    context,
+                    formatDate(current.snapshot.fetched_at, locale),
+                  )
+                : context}
             </p>
           ) : null}
         </div>
       </div>
 
       <Section
-        title="Matchups"
-        description={`How ${hero.name}'s win rate changes against each hero, in percentage points${pairContext ? ` (${pairContext})` : ""}. The official data lists each hero's five best and five worst matchups.`}
+        title={t.detail.matchups}
+        description={t.detail.matchupsDescription(hero.name, pairContext)}
       >
         <div className="relative grid overflow-hidden rounded-lg border md:grid-cols-2">
           <div className="flex flex-col gap-2 bg-ally-soft/50 p-4">
             <h3 className="text-sm font-semibold text-ally-text">
-              Strong against
+              {t.detail.strongAgainst}
             </h3>
-            <PairingList
-              entries={beats}
-              empty="No favorable matchups in the data."
-            />
+            <PairingList entries={beats} empty={t.detail.noFavorable} />
           </div>
           <div className="flex flex-col gap-2 border-t bg-enemy-soft/50 p-4 md:border-t-0 md:border-l">
             <h3 className="text-sm font-semibold text-enemy-text">
-              Countered by
+              {t.detail.counteredBy}
             </h3>
-            <PairingList
-              entries={losesTo}
-              empty="No unfavorable matchups in the data."
-            />
+            <PairingList entries={losesTo} empty={t.detail.noUnfavorable} />
           </div>
         </div>
       </Section>
 
       <Section
-        title="Best teammates"
-        description={`Heroes that raise ${hero.name}'s win rate most when on the same team${pairContext ? ` (${pairContext})` : ""}.`}
+        title={t.detail.bestTeammates}
+        description={t.detail.bestTeammatesDescription(hero.name, pairContext)}
       >
         <div className="rounded-lg border bg-surface p-3">
-          <PairingList
-            entries={teammates}
-            empty="No teammate data for this hero yet."
-          />
+          <PairingList entries={teammates} empty={t.detail.noTeammates} />
         </div>
       </Section>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-10">
-          <Section title="Skills">
+          <Section title={t.detail.skills}>
             <ol className="flex flex-col divide-y rounded-lg border bg-surface">
               {displaySkills(skills).map((skill) => (
                 <li
@@ -318,12 +336,12 @@ async function HeroDetail({
                     <h3 className="font-semibold">{skill.name}</h3>
                     {skill.slot === 0 ? (
                       <span className="text-xs text-muted-foreground">
-                        Passive
+                        {t.detail.passive}
                       </span>
                     ) : null}
                     {skill.cooldown ? (
                       <span className="text-xs text-muted-foreground tabular-nums">
-                        Cooldown {skill.cooldown}s
+                        {t.detail.cooldown(skill.cooldown)}
                       </span>
                     ) : null}
                     {skill.cost ? (
@@ -338,7 +356,7 @@ async function HeroDetail({
                   {skill.tags.length > 0 ? (
                     <ul
                       className="flex flex-wrap gap-1"
-                      aria-label="Skill effects"
+                      aria-label={t.detail.skillEffects}
                     >
                       {skill.tags.map((tag) => (
                         <li
@@ -357,8 +375,8 @@ async function HeroDetail({
 
           {relationGroups.length > 0 ? (
             <Section
-              title="Official notes"
-              description="What the official hero guide says about pairings."
+              title={t.detail.officialNotes}
+              description={t.detail.officialNotesDescription}
             >
               <div className="flex flex-col gap-4">
                 {relationGroups.map((group) => (
@@ -367,7 +385,7 @@ async function HeroDetail({
                     className="flex flex-col gap-2 rounded-lg border bg-surface p-4"
                   >
                     <h3 className="text-sm font-semibold">
-                      {relationTitles[group.kind]}
+                      {t.detail.relations[group.kind]}
                     </h3>
                     <ul className="flex flex-wrap gap-2">
                       {group.targets.map((target) => (
@@ -401,30 +419,30 @@ async function HeroDetail({
 
         <aside className="flex flex-col gap-10">
           <Section
-            title="By rank"
-            description={`${periodLabels[DEFAULT_PERIOD]}.`}
+            title={t.detail.byRank}
+            description={`${c.periods[DEFAULT_PERIOD]}.`}
           >
             <div className="overflow-hidden rounded-lg border bg-surface">
               <table className="w-full text-sm">
                 <thead className="bg-surface-2 text-xs text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-3 py-2 text-left font-medium">
-                      Rank
+                      {t.detail.columns.rank}
                     </th>
                     <th scope="col" className="px-2 py-2 text-left font-medium">
-                      Tier
+                      {t.detail.columns.tier}
                     </th>
                     <th
                       scope="col"
                       className="px-2 py-2 text-right font-medium"
                     >
-                      Win
+                      {t.detail.columns.win}
                     </th>
                     <th
                       scope="col"
                       className="px-3 py-2 text-right font-medium"
                     >
-                      Ban
+                      {t.detail.columns.ban}
                     </th>
                   </tr>
                 </thead>
@@ -445,7 +463,7 @@ async function HeroDetail({
                           scope="row"
                           className="px-3 py-2 text-left font-medium"
                         >
-                          {bracketLabels[bracket]}
+                          {c.brackets[bracket]}
                         </th>
                         <td className="px-2 py-2">
                           {row?.tier ? (
@@ -455,10 +473,10 @@ async function HeroDetail({
                           )}
                         </td>
                         <td className="px-2 py-2 text-right tabular-nums">
-                          {formatPercent(row?.winRate)}
+                          {formatPercent(row?.winRate, 1, locale)}
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums">
-                          {formatPercent(row?.banRate)}
+                          {formatPercent(row?.banRate, 1, locale)}
                         </td>
                       </tr>
                     );
@@ -470,8 +488,8 @@ async function HeroDetail({
 
           {ratings.length > 0 ? (
             <Section
-              title="Hero ratings"
-              description="Official ratings from 0 to 100."
+              title={t.detail.ratings}
+              description={t.detail.ratingsDescription}
             >
               <div className="flex flex-col gap-3 rounded-lg border bg-surface p-4">
                 {ratings.map((rating) => (
@@ -487,20 +505,20 @@ async function HeroDetail({
 
           {tags ? (
             <Section
-              title="Team role"
-              description="Curated by hand for team composition and draft suggestions, from 0 to 3."
+              title={t.detail.teamRole}
+              description={t.detail.teamRoleDescription}
             >
               <div className="flex flex-col gap-2.5 rounded-lg border bg-surface p-4">
                 <p className="text-sm font-medium">
-                  {damageTypeLabels[tags.damage_type]}
+                  {c.damageTypes[tags.damage_type]}
                 </p>
-                {TAG_FIELDS.map(({ key, label }) => (
-                  <LevelSteps key={key} label={label} level={tags[key]} />
+                {TAG_FIELDS.map(({ key }) => (
+                  <LevelSteps key={key} label={c.tags[key]} level={tags[key]} />
                 ))}
                 {tags.needs_review ? (
                   <p className="flex items-start gap-1.5 pt-1 text-xs text-muted-foreground">
                     <InfoIcon className="mt-px size-3.5 shrink-0" aria-hidden />
-                    These values still need a check against recent games.
+                    {t.detail.needsReview}
                   </p>
                 ) : null}
               </div>

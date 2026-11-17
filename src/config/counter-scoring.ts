@@ -23,6 +23,9 @@ import type { TagLevelKey } from "@/types/data";
  * + (adjusted win rate − 50%) × 100 × `metaWeight`, where the adjusted win
  * rate is the one the tier list uses (pulled toward 50% for rarely picked
  * heroes, see tier-scoring.ts).
+ *
+ * The texts that describe each tag rule on screen are in
+ * src/i18n/messages/counter.ts, keyed by the rule id.
  */
 export const COUNTER_SCORING = {
   /** Points per percentage point of win rate change in the statistics. */
@@ -31,24 +34,24 @@ export const COUNTER_SCORING = {
   relationPoints: 1.5,
   tagRules: [
     {
+      // Hard crowd control against a mobile hero.
       id: "lockdown",
-      label: "Hard crowd control against a mobile hero",
       attacker: "hard_cc",
       target: ["mobility"],
       invertTarget: false,
       points: 1,
     },
     {
+      // Burst against a hero with little frontline.
       id: "burst",
-      label: "Burst against a hero with little frontline",
       attacker: "burst",
       target: ["frontline"],
       invertTarget: true,
       points: 0.8,
     },
     {
+      // Peel against a diving assassin.
       id: "peel",
-      label: "Peel against a diving assassin",
       attacker: "peel",
       // A diver needs both: the lower of the two levels counts.
       target: ["burst", "mobility"],
@@ -62,9 +65,11 @@ export const COUNTER_SCORING = {
   metaWeight: 0.3,
 };
 
+/** Ids of the tag rules, which also key their texts in src/i18n/messages/counter.ts. */
+export type CounterTagRuleId = "lockdown" | "burst" | "peel";
+
 export type TagRule = {
-  id: string;
-  label: string;
+  id: CounterTagRuleId;
   attacker: TagLevelKey;
   /** Target tags; when several, the lowest level counts. */
   target: readonly TagLevelKey[];

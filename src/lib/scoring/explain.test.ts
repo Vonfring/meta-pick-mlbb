@@ -57,14 +57,7 @@ describe("edgeLines", () => {
   it("adds up small tag effects so the lines match the edge", () => {
     const lines = edgeLines(
       edge({
-        tagReasons: [
-          {
-            rule: "lockdown",
-            label: "Hard crowd control against a mobile hero",
-            by: "hero",
-            points: 1,
-          },
-        ],
+        tagReasons: [{ rule: "lockdown", by: "hero", points: 1 }],
         points: { stats: 0, notes: 0, tags: 1.27, total: 1.27 },
       }),
       nameOf,
@@ -74,5 +67,42 @@ describe("edgeLines", () => {
       "Smaller tag effects",
     ]);
     expect(lines.reduce((s, l) => s + l.points, 0)).toBeCloseTo(1.27, 10);
+  });
+
+  it("writes Indonesian sentences with a decimal comma", () => {
+    const lines = edgeLines(
+      edge({
+        statsDelta: -0.032,
+        statsFrom: "opponent",
+        notes: [{ kind: "strong_against", by: "hero", points: 1.5 }],
+        tagReasons: [{ rule: "peel", by: "opponent", points: -0.8 }],
+        points: { stats: 3.2, notes: 1.5, tags: -0.8, total: 3.9 },
+      }),
+      nameOf,
+      "id",
+    );
+    expect(lines.map((l) => l.text)).toEqual([
+      "Win rate Fanny naik 3,2 poin lawan Khufra",
+      "Catatan resmi: Khufra kuat lawan Fanny",
+      "Fanny: jagain carry dari assassin yang nge-dive",
+    ]);
+  });
+
+  it("words the hero's own list in Indonesian too", () => {
+    const lines = edgeLines(
+      edge({
+        statsDelta: -0.02,
+        statsFrom: "hero",
+        notes: [{ kind: "weak_against", by: "opponent", points: 1.5 }],
+        points: { stats: -2, notes: 1.5, tags: 0.1, total: -0.4 },
+      }),
+      nameOf,
+      "id",
+    );
+    expect(lines.map((l) => l.text)).toEqual([
+      "Win rate Khufra turun 2,0 poin lawan Fanny",
+      "Catatan resmi: Fanny lemah lawan Khufra",
+      "Efek tag kecil lainnya",
+    ]);
   });
 });

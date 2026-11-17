@@ -6,6 +6,9 @@ import { EmptyState } from "@/components/meta/empty-state";
 import { Button } from "@/components/ui/button";
 import { ChipGroup, type ChipOption } from "@/components/ui/chip-group";
 import { Input } from "@/components/ui/input";
+import { useLocale } from "@/i18n/client";
+import { common } from "@/i18n/messages/common";
+import { heroesText } from "@/i18n/messages/heroes";
 import type { RankedHero } from "@/lib/data";
 import { compareNames, searchKey } from "@/lib/format";
 import { oneOf, useUrlParams } from "@/lib/use-url-params";
@@ -14,17 +17,11 @@ import {
   HERO_ROLES,
   type HeroLane,
   type HeroRole,
-  laneLabels,
-  roleLabels,
 } from "@/types/domain";
 import { HeroTile } from "./hero-tile";
 
-const SORTS = {
-  name: "Name",
-  tier: "Tier",
-  win: "Win rate",
-} as const;
-type SortKey = keyof typeof SORTS;
+const SORTS = ["name", "tier", "win"] as const;
+type SortKey = (typeof SORTS)[number];
 
 const byName = (a: RankedHero, b: RankedHero) => compareNames(a.name, b.name);
 /** Missing values sort last, then by name. */
@@ -46,24 +43,27 @@ export function HeroBrowser({
   heroes: RankedHero[];
   context: string;
 }) {
+  const locale = useLocale();
+  const t = heroesText[locale].list;
+  const c = common[locale];
   const [params, setParams] = useUrlParams();
   const query = params.get("q") ?? "";
   const role = oneOf<HeroRole>(params.get("role"), HERO_ROLES);
   const lane = oneOf<HeroLane>(params.get("lane"), HERO_LANES);
   const sortParam = params.get("sort");
-  // Object.hasOwn, so "?sort=valueOf" cannot pick an Object.prototype method.
+  // A list lookup, so "?sort=valueOf" cannot pick an Object.prototype method.
   const sort: SortKey =
-    sortParam && Object.hasOwn(SORTS, sortParam)
+    sortParam && (SORTS as readonly string[]).includes(sortParam)
       ? (sortParam as SortKey)
       : "name";
 
   const roleOptions: ChipOption<HeroRole | "all">[] = [
-    { value: "all", label: "All roles" },
-    ...HERO_ROLES.map((r) => ({ value: r, label: roleLabels[r] })),
+    { value: "all", label: t.allRoles },
+    ...HERO_ROLES.map((r) => ({ value: r, label: c.roles[r] })),
   ];
   const laneOptions: ChipOption<HeroLane | "all">[] = [
-    { value: "all", label: "All lanes" },
-    ...HERO_LANES.map((l) => ({ value: l, label: laneLabels[l] })),
+    { value: "all", label: t.allLanes },
+    ...HERO_LANES.map((l) => ({ value: l, label: c.lanes[l] })),
   ];
 
   const shown = useMemo(() => {
@@ -85,7 +85,7 @@ export function HeroBrowser({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <label className="relative block flex-1 sm:max-w-sm">
-            <span className="sr-only">Search heroes</span>
+            <span className="sr-only">{t.search}</span>
             <MagnifyingGlassIcon
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden
@@ -93,7 +93,7 @@ export function HeroBrowser({
             <Input
               type="search"
               value={query}
-              placeholder="Search heroes"
+              placeholder={t.search}
               autoComplete="off"
               spellCheck={false}
               className="pl-9"
@@ -101,7 +101,7 @@ export function HeroBrowser({
             />
           </label>
           <label className="flex items-center gap-2 text-sm text-muted-foreground sm:ml-auto">
-            Sort by
+            {t.sortBy}
             <select
               value={sort}
               onChange={(event) =>
@@ -112,16 +112,16 @@ export function HeroBrowser({
               }
               className="h-10 rounded-md border bg-surface px-3 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
             >
-              {Object.entries(SORTS).map(([value, label]) => (
+              {SORTS.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t.sorts[value]}
                 </option>
               ))}
             </select>
           </label>
         </div>
         <ChipGroup
-          label="Role"
+          label={t.role}
           options={roleOptions}
           value={role}
           onChange={(value) =>
@@ -129,7 +129,7 @@ export function HeroBrowser({
           }
         />
         <ChipGroup
-          label="Lane"
+          label={t.lane}
           options={laneOptions}
           value={lane}
           onChange={(value) =>
@@ -139,10 +139,7 @@ export function HeroBrowser({
       </div>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">
-        {filtered
-          ? `${shown.length} of ${heroes.length} heroes`
-          : `${heroes.length} heroes`}
-        . Tiers and win rates: {context}.
+        {t.summary(shown.length, heroes.length, filtered, context)}
       </p>
 
       {shown.length > 0 ? (
@@ -156,15 +153,15 @@ export function HeroBrowser({
       ) : (
         <EmptyState
           icon={UsersThreeIcon}
-          title="No hero matches these filters"
-          description="Try another name, or clear the role and lane filters."
+          title={t.emptyTitle}
+          description={t.emptyDescription}
           action={
             <Button
               variant="outline"
               size="sm"
               onClick={() => setParams({ q: null, role: null, lane: null })}
             >
-              Clear filters
+              {t.clearFilters}
             </Button>
           }
         />
